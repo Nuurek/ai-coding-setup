@@ -78,3 +78,8 @@ export function regenPlist(configPath: string): void {
   execSync(`launchctl bootstrap gui/${uid} "${plistPath}"`);
   console.log("  Loaded com.qmd.auto-embed");
 }
+
+export const launchdScheduler = {
+  label: "launchd",
+  regen: regenPlist,
+};

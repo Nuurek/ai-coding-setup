@@ -1,6 +1,6 @@
 # qmd-setup
 
-CLI tool that manages [qmd](https://github.com/tobilu/qmd) collections, launchd auto-indexing, and Claude Code integration.
+CLI tool that manages [qmd](https://github.com/tobilu/qmd) collections, auto-indexing (launchd on macOS, systemd on Linux), and Claude Code integration.
 
 **Important:** After making changes, review and update all documentation that may be affected — this includes both this file (`CLAUDE.md`) and `README.md`.
 
@@ -11,10 +11,10 @@ npm test                        # compile + run all tests
 npm run build                   # compile TypeScript only
 npm run lint                    # biome check
 npm run format                  # biome check --write
-qmd-setup                      # full setup (symlinks, MCP, sync, index, launchd)
+qmd-setup                      # full setup (symlinks, MCP, sync, index, scheduler)
 qmd-setup sync                 # add collections from config to qmd
 qmd-setup sync --remove        # add + remove collections not in config
-qmd-setup regen-plist           # regenerate launchd plist from config
+qmd-setup regen-scheduler        # regenerate file-watcher (auto-detects platform)
 qmd-setup -c path/to/config.yaml sync  # use custom config
 ```
 
@@ -26,10 +26,15 @@ src/
   setup.test.ts         # tests for mergeMcpConfig, resolveConfigPath
   sync-collections.ts   # collection sync logic, types (Config, Collection), helpers
   sync-collections.test.ts  # tests for expandHome, buildGlob, parseCollectionNames
+  platform.ts           # platform detection (macos/linux)
   regen-plist.ts        # launchd plist generation (Mustache), extractWatchPaths
   regen-plist.test.ts   # tests for buildPlistXml, extractWatchPaths (mocked fs)
+  regen-systemd.ts      # systemd service+path unit generation (Mustache)
+  regen-systemd.test.ts # tests for buildServiceUnit, buildPathUnit
 templates/
-  launchd-plist.mustache  # Mustache template for launchd plist
+  launchd-plist.mustache    # Mustache template for launchd plist (macOS)
+  systemd-service.mustache  # Mustache template for systemd service unit (Linux)
+  systemd-path.mustache     # Mustache template for systemd path unit (Linux)
 bin/
   qmd-auto-embed.sh    # shell script triggered by launchd (qmd update + embed)
 fragments/
@@ -55,7 +60,7 @@ Types are defined in `sync-collections.ts`: `Config`, `Collection`, `LaunchdConf
 - **Biome** — linting and formatting (double quotes, semicolons, 2-space indent, 100 line width)
 - **lint-staged** — pre-commit hook via `.githooks/pre-commit`
 - **Commander.js** — CLI argument parsing
-- **Mustache** — template rendering (plist generation). Uses triple-mustache `{{{var}}}` for filesystem paths (no HTML escaping)
+- **Mustache** — template rendering (plist/systemd unit generation). Uses triple-mustache `{{{var}}}` for filesystem paths (no HTML escaping)
 - **yaml** — config file parsing
 
 ## Testing

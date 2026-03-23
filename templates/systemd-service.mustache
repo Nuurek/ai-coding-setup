@@ -1,0 +1,8 @@
+[Unit]
+Description=qmd auto-embed: re-index collections and regenerate embeddings
+
+[Service]
+Type=oneshot
+ExecStart={{{home}}}/.local/bin/qmd-auto-embed.sh
+StandardOutput=append:{{{home}}}/.local/log/qmd-auto-embed.log
+StandardError=append:{{{home}}}/.local/log/qmd-auto-embed.log

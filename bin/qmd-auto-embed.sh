@@ -2,9 +2,14 @@
 # qmd-auto-embed: re-index changed collections and regenerate embeddings
 # Triggered by launchd when .git/refs change in any watched repo
 
-# launchd uses minimal PATH — build a useful one dynamically
+# launchd / systemd uses minimal PATH — build a useful one dynamically
 
-# Homebrew (Apple Silicon and Intel)
+# System paths (Linux)
+for sys_bin in /usr/bin /usr/local/bin /snap/bin; do
+  [ -d "$sys_bin" ] && export PATH="$sys_bin:$PATH"
+done
+
+# Homebrew (macOS: Apple Silicon and Intel)
 for brew_prefix in /opt/homebrew /usr/local; do
   [ -d "$brew_prefix/bin" ] && export PATH="$brew_prefix/bin:$PATH"
 done
