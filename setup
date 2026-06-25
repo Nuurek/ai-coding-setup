@@ -3,7 +3,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-echo "=== qmd-setup bootstrap ==="
+echo "=== ai-coding-setup bootstrap ==="
 echo ""
 
 # ── Find node >= 22 ──────────────────────────────────────────────────

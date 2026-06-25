@@ -84,7 +84,7 @@ function symlinkSafe(src: string, dst: string): void {
 // --- Main ---
 
 function main(configOverride?: string): void {
-  console.log("=== qmd-setup ===");
+  console.log("=== ai-coding-setup ===");
   console.log(`Repo: ${REPO_DIR}`);
   console.log("");
 

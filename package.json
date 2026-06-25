@@ -1,11 +1,11 @@
 {
-  "name": "qmd-setup",
+  "name": "ai-coding-setup",
   "version": "1.0.0",
   "description": "Manage qmd collections, auto-indexing, and Claude Code integration",
   "private": true,
   "type": "module",
   "bin": {
-    "qmd-setup": "dist/setup.js"
+    "ai-coding-setup": "dist/setup.js"
   },
   "scripts": {
     "build": "tsc",
