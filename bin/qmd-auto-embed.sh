@@ -24,9 +24,22 @@ done
 # asdf
 [ -d "$HOME/.asdf/shims" ] && export PATH="$HOME/.asdf/shims:$PATH"
 
-# nvm — find the latest installed version dynamically
+# nvm — prefer the default alias to match interactive shell; fall back to latest
 if [ -d "$HOME/.nvm/versions/node" ]; then
-  NODE_DIR=$(ls -1d "$HOME/.nvm/versions/node"/v* 2>/dev/null | sort -V | tail -1)
+  NODE_DIR=""
+  if [ -f "$HOME/.nvm/alias/default" ]; then
+    _alias=$(cat "$HOME/.nvm/alias/default")
+    # Exact version (e.g. "v24.11.1" or "24.11.1")
+    _exact="$HOME/.nvm/versions/node/v${_alias#v}"
+    if [ -d "$_exact" ]; then
+      NODE_DIR="$_exact"
+    else
+      # Partial alias (e.g. "24" → latest v24.x)
+      NODE_DIR=$(ls -1d "$HOME/.nvm/versions/node/v${_alias}"* 2>/dev/null | sort -V | tail -1)
+    fi
+  fi
+  # Fall back to latest installed if alias not resolved
+  [ -z "$NODE_DIR" ] && NODE_DIR=$(ls -1d "$HOME/.nvm/versions/node"/v* 2>/dev/null | sort -V | tail -1)
   [ -n "$NODE_DIR" ] && export PATH="$NODE_DIR/bin:$PATH"
 fi
 
