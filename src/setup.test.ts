@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { afterEach, describe, it } from "node:test";
 import type { MergeResult } from "./setup.js";
-import { mergeMcpConfig, resolveConfigPath } from "./setup.js";
+import { mergeMcpConfig, mergeStatusLine, resolveConfigPath } from "./setup.js";
 
 describe("mergeMcpConfig", () => {
   const fragment = { qmd: { command: "qmd", args: ["mcp"] } };
@@ -43,6 +43,38 @@ describe("mergeMcpConfig", () => {
     const result = mergeMcpConfig(existing, fragment);
     assert.equal(result.action, "added");
     assert.equal((result.config as Record<string, unknown>).theme, "dark");
+  });
+});
+
+describe("mergeStatusLine", () => {
+  const fragment = { type: "command", command: "echo status" };
+
+  it("creates new settings when existing is null", () => {
+    const result: MergeResult = mergeStatusLine(null, fragment);
+    assert.equal(result.action, "created");
+    assert.deepEqual(result.config, { statusLine: fragment });
+  });
+
+  it("returns exists when statusLine already configured", () => {
+    const existing = { statusLine: { type: "command", command: "echo custom" } };
+    const result = mergeStatusLine(existing, fragment);
+    assert.equal(result.action, "exists");
+    assert.deepEqual(result.config, existing);
+  });
+
+  it("adds statusLine to existing settings without one", () => {
+    const existing = { model: "opusplan" };
+    const result = mergeStatusLine(existing, fragment);
+    assert.equal(result.action, "added");
+    assert.deepEqual(result.config.statusLine, fragment);
+  });
+
+  it("preserves other top-level keys when adding", () => {
+    const existing = { model: "opusplan", env: { FOO: "bar" } };
+    const result = mergeStatusLine(existing, fragment);
+    assert.equal(result.action, "added");
+    assert.equal((result.config as Record<string, unknown>).model, "opusplan");
+    assert.deepEqual((result.config as Record<string, unknown>).env, { FOO: "bar" });
   });
 });
 

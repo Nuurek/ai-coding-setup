@@ -61,6 +61,19 @@ export function mergeMcpConfig(
   };
 }
 
+export function mergeStatusLine(
+  existing: Record<string, unknown> | null,
+  fragment: Record<string, unknown>,
+): MergeResult {
+  if (!existing) {
+    return { action: "created", config: { statusLine: fragment } };
+  }
+  if (existing.statusLine) {
+    return { action: "exists", config: existing };
+  }
+  return { action: "added", config: { ...existing, statusLine: fragment } };
+}
+
 function symlinkSafe(src: string, dst: string): void {
   if (lstatSync(dst, { throwIfNoEntry: false })?.isSymbolicLink()) {
     const current = readlinkSync(dst);
@@ -121,6 +134,28 @@ function main(configOverride?: string): void {
     added: "  ADD  qmd MCP server",
   };
   console.log(labels[action]);
+  console.log("");
+
+  // ── Step 3b: Inject status line into Claude Code settings ─────────
+  console.log("--- Configuring status line ---");
+  const settingsPath = `${HOME}/.claude/settings.json`;
+  const statusFragment = JSON.parse(
+    readFileSync(`${REPO_DIR}/fragments/status-line.json`, "utf-8"),
+  );
+  const existingSettings = existsSync(settingsPath)
+    ? JSON.parse(readFileSync(settingsPath, "utf-8"))
+    : null;
+  const { action: slAction, config: slConfig } = mergeStatusLine(existingSettings, statusFragment);
+  if (slAction !== "exists") {
+    mkdirSync(`${HOME}/.claude`, { recursive: true });
+    writeFileSync(settingsPath, `${JSON.stringify(slConfig, null, 2)}\n`);
+  }
+  const slLabels = {
+    created: `  CREATE ${settingsPath}`,
+    exists: "  OK   status line already configured",
+    added: "  ADD  status line",
+  };
+  console.log(slLabels[slAction]);
   console.log("");
 
   // ── Step 4: Sync collections ───────────────────────────────────────
