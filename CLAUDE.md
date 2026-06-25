@@ -11,7 +11,7 @@ npm test                        # compile + run all tests
 npm run build                   # compile TypeScript only
 npm run lint                    # biome check
 npm run format                  # biome check --write
-ai-coding-setup                      # full setup (symlinks, MCP, sync, index, scheduler)
+ai-coding-setup                      # full setup (symlinks, MCP, status line, sync, index, scheduler)
 ai-coding-setup sync                 # add collections from config to qmd
 ai-coding-setup sync --remove        # add + remove collections not in config
 ai-coding-setup regen-scheduler        # regenerate file-watcher (auto-detects platform)
@@ -22,8 +22,8 @@ ai-coding-setup -c path/to/config.yaml sync  # use custom config
 
 ```
 src/
-  setup.ts              # CLI entry point (commander), main setup flow, MCP config merge
-  setup.test.ts         # tests for mergeMcpConfig, resolveConfigPath
+  setup.ts              # CLI entry point (commander), main setup flow, MCP config merge, status-line merge
+  setup.test.ts         # tests for mergeMcpConfig, mergeStatusLine, resolveConfigPath
   sync-collections.ts   # collection sync logic, types (Config, Collection), helpers
   sync-collections.test.ts  # tests for expandHome, buildGlob, parseCollectionNames
   scheduler.ts          # platform dispatch (darwin->launchd, linux->systemd)
@@ -39,6 +39,7 @@ bin/
   qmd-auto-embed.sh    # shell script triggered by launchd/systemd (qmd update + embed)
 fragments/
   mcp-server.json       # MCP server config fragment injected into ~/.claude.json
+  status-line.json      # statusLine block merged into ~/.claude/settings.json
 skills/                 # Claude Code skills (symlinked to ~/.claude/skills/)
 rules/                  # Claude Code rules (symlinked to ~/.claude/rules/)
 config.example.yaml     # example config for new users
