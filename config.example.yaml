@@ -24,6 +24,7 @@ masks:
     - hcl
   templates:
     - tpl
+    - mustache
   python:
     - py
   go:
@@ -36,6 +37,7 @@ masks:
     - sql
     - graphql
 
+# macOS only — ignored on Linux (systemd path units debounce automatically)
 launchd:
   throttle_interval: 30  # seconds between re-index triggers (default: 30)
 

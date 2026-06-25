@@ -1,11 +1,11 @@
 # qmd-setup
 
-CLI tool that manages [qmd](https://github.com/tobilu/qmd) collections, launchd auto-indexing, and [Claude Code](https://docs.anthropic.com/en/docs/claude-code) integration.
+CLI tool that manages [qmd](https://github.com/tobilu/qmd) collections, auto-indexing, and [Claude Code](https://docs.anthropic.com/en/docs/claude-code) integration.
 
 ## What it does
 
 - **Syncs collections** — reads a YAML config and registers repos with qmd
-- **Auto-indexes** — installs a macOS launchd agent that re-indexes and re-embeds when `.git/refs` change in any watched repo
+- **Auto-indexes** — installs a file-watcher that re-indexes and re-embeds when `.git/logs/HEAD` changes in any watched repo (launchd on macOS, systemd on Linux)
 - **Claude Code integration** — symlinks rules and skills into `~/.claude/` and merges the qmd MCP server into `~/.claude.json`
 
 ## Prerequisites
@@ -13,7 +13,7 @@ CLI tool that manages [qmd](https://github.com/tobilu/qmd) collections, launchd 
 - **Node.js >= 22**
 - **npm** or **bun**
 - **qmd** (installed automatically if missing)
-- macOS (launchd agent is macOS-only)
+- macOS or Linux (Ubuntu/Debian)
 
 ## Install
 
@@ -27,7 +27,7 @@ The `setup` script:
 2. Installs `qmd` globally if not present
 3. Installs npm dependencies and compiles TypeScript
 4. Runs `npm link` to make `qmd-setup` available on PATH
-5. Executes the full setup flow (symlinks, MCP config, collection sync, launchd agent)
+5. Executes the full setup flow (symlinks, MCP config, collection sync, scheduler)
 
 ## Configuration
 
@@ -39,6 +39,7 @@ masks:
   python: [py]
   config: [yaml, yml, json, toml]
 
+# macOS only — ignored on Linux (systemd path units debounce automatically)
 launchd:
   throttle_interval: 30  # seconds between re-index triggers
 
@@ -57,7 +58,7 @@ Override config path with `-c` / `--config` on any command.
 ## Usage
 
 ```bash
-# Full setup (symlinks, MCP config, sync, launchd)
+# Full setup (symlinks, MCP config, sync, scheduler)
 qmd-setup
 
 # Sync collections from config into qmd
@@ -66,8 +67,8 @@ qmd-setup sync
 # Sync and remove collections not in config
 qmd-setup sync --remove
 
-# Regenerate launchd plist from config
-qmd-setup regen-plist
+# Regenerate file-watcher from config (auto-detects platform)
+qmd-setup regen-scheduler
 
 # Use a custom config file
 qmd-setup -c /path/to/config.yaml sync
@@ -75,14 +76,31 @@ qmd-setup -c /path/to/config.yaml sync
 
 ## How auto-indexing works
 
-The setup installs a macOS launchd agent (`com.qmd.auto-embed`) that watches `.git/refs/` in every configured collection. When git refs change (commits, branch switches, fetches), launchd triggers `qmd-auto-embed.sh`, which runs:
+The watcher fires when `.git/logs/HEAD` changes in a configured collection. This covers commits, branch checkouts, resets, merges, rebases, and pulls on the current branch — the operations that actually change the on-disk working tree. Fetch-only operations that update remote-tracking branches are intentionally not triggered (no file change on disk).
+
+### macOS (launchd)
+
+`qmd-setup regen-scheduler` writes `~/Library/LaunchAgents/com.qmd.auto-embed.plist` and loads it with `launchctl`. Triggers are throttled (default: 30s, configurable via `launchd.throttle_interval`).
+
+### Linux (systemd)
+
+`qmd-setup regen-scheduler` writes two systemd user units:
+
+- `~/.config/systemd/user/qmd-auto-embed.service` — runs `qmd-auto-embed.sh`
+- `~/.config/systemd/user/qmd-auto-embed.path` — watches `.git/logs/HEAD` in each collection
+
+Then runs `systemctl --user daemon-reload && systemctl --user enable --now qmd-auto-embed.path`.
+
+### The trigger script
+
+Both platforms run `~/.local/bin/qmd-auto-embed.sh`:
 
 ```
 qmd update   # re-index changed collections
 qmd embed    # regenerate vector embeddings
 ```
 
-Triggers are throttled (default: 30s) to avoid excessive re-indexing. Logs go to `~/.local/log/qmd-auto-embed.log`.
+Logs go to `~/.local/log/qmd-auto-embed.log`.
 
 ## Claude Code integration
 

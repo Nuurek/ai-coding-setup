@@ -1,7 +1,7 @@
 {
   "name": "qmd-setup",
   "version": "1.0.0",
-  "description": "Manage qmd collections, launchd, and Claude Code integration",
+  "description": "Manage qmd collections, auto-indexing, and Claude Code integration",
   "private": true,
   "type": "module",
   "bin": {

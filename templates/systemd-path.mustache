@@ -1,0 +1,11 @@
+[Unit]
+Description=Watch git refs for qmd auto-embed
+
+[Path]
+{{#watchPaths}}
+PathModified={{{.}}}
+{{/watchPaths}}
+Unit=qmd-auto-embed.service
+
+[Install]
+WantedBy=default.target

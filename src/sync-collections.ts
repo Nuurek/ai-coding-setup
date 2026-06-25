@@ -1,7 +1,8 @@
 import { execSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { basename } from "node:path";
+import { basename, dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
 
 // --- Types ---
@@ -23,6 +24,8 @@ export interface Collection {
 }
 
 // --- Helpers ---
+
+const REPO_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 export const expandHome = (p: string): string => p.replace(/^~/, homedir());
 
@@ -56,6 +59,13 @@ export interface SyncOptions {
 }
 
 export function syncCollections(configPath: string, options?: SyncOptions): void {
+  if (!existsSync(configPath)) {
+    const example = resolve(REPO_DIR, "config.example.yaml");
+    mkdirSync(dirname(configPath), { recursive: true });
+    copyFileSync(example, configPath);
+    console.log(`  CREATE ${configPath} (copied from config.example.yaml)`);
+    console.log(`  Edit it to add your collections, then re-run qmd-setup.`);
+  }
   const config: Config = parseYaml(readFileSync(configPath, "utf-8"));
   const masks = config.masks || {};
   const collections = config.collections || [];

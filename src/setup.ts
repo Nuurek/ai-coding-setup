@@ -17,7 +17,7 @@ import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
-import { regenPlist } from "./regen-plist.js";
+import { getScheduler } from "./scheduler.js";
 import { syncCollections } from "./sync-collections.js";
 
 const require = createRequire(import.meta.url);
@@ -135,9 +135,10 @@ function main(configOverride?: string): void {
   console.log(`  See log: ~/.local/log/qmd-auto-embed.log`);
   console.log("");
 
-  // ── Step 6: Set up launchd ─────────────────────────────────────────
-  console.log("--- Setting up launchd auto-embed ---");
-  regenPlist(configPath);
+  // ── Step 6: Set up file-watcher (launchd on macOS, systemd on Linux)
+  const scheduler = getScheduler();
+  console.log(`--- Setting up ${scheduler.label} auto-embed ---`);
+  scheduler.regen(configPath);
   console.log("");
 
   console.log("=== Setup complete ===");
@@ -163,9 +164,12 @@ export function cli(argv = process.argv): void {
     .action((opts) => syncCollections(configPath(), { remove: opts.remove }));
 
   program
-    .command("regen-plist")
-    .description("Regenerate the launchd plist")
-    .action(() => regenPlist(configPath()));
+    .command("regen-scheduler")
+    .description("Regenerate file-watcher (auto-detects platform)")
+    .action(() => {
+      const scheduler = getScheduler();
+      scheduler.regen(configPath());
+    });
 
   program.parse(argv);
 }

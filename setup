@@ -28,12 +28,14 @@ find_node() {
     check_node "$(command -v node)" && return 0
   fi
 
-  # Common locations
+  # Common locations (macOS + Linux)
   local candidates=(
     /opt/homebrew/bin/node
     /usr/local/bin/node
+    /usr/bin/node
     "$HOME/.local/share/mise/installs/node/latest/bin/node"
     "$HOME/.asdf/shims/node"
+    /snap/bin/node
   )
 
   # nvm — find latest installed version
