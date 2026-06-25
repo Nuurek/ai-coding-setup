@@ -1,8 +1,6 @@
 import assert from "node:assert/strict";
 import * as realFs from "node:fs";
-import { homedir } from "node:os";
 import { afterEach, describe, it, mock } from "node:test";
-import type { Collection } from "./sync-collections.js";
 
 // --- Mock setup (same proxy pattern as regen-plist.test.ts) ---
 let existsFn: (p: string) => boolean = realFs.existsSync;
@@ -12,7 +10,6 @@ mock.module("node:fs", {
 });
 
 const { buildServiceUnit, buildPathUnit } = await import("./regen-systemd.js");
-// extractWatchPaths is tested in regen-plist.test.ts — reuse it here for integration
 const { extractWatchPaths } = await import("./regen-plist.js");
 
 afterEach(() => {
@@ -40,15 +37,15 @@ describe("buildServiceUnit", () => {
 
 describe("buildPathUnit", () => {
   it("generates a valid systemd path unit", () => {
-    const unit = buildPathUnit(["/repo1/.git/refs", "/repo2/.git/refs"]);
+    const unit = buildPathUnit(["/repo1/.git/logs/HEAD", "/repo2/.git/logs/HEAD"]);
     assert.ok(unit.includes("[Path]"));
     assert.ok(unit.includes("[Install]"));
-    assert.ok(unit.includes("PathChanged=/repo1/.git/refs"));
-    assert.ok(unit.includes("PathChanged=/repo2/.git/refs"));
+    assert.ok(unit.includes("PathModified=/repo1/.git/logs/HEAD"));
+    assert.ok(unit.includes("PathModified=/repo2/.git/logs/HEAD"));
   });
 
   it("references qmd-auto-embed.service", () => {
-    const unit = buildPathUnit(["/r/.git/refs"]);
+    const unit = buildPathUnit(["/r/.git/logs/HEAD"]);
     assert.ok(unit.includes("Unit=qmd-auto-embed.service"));
   });
 
@@ -58,8 +55,24 @@ describe("buildPathUnit", () => {
   });
 
   it("handles single watch path", () => {
-    const unit = buildPathUnit(["/only/.git/refs"]);
-    const matches = unit.match(/PathChanged=\/only\/.git\/refs/g);
+    const unit = buildPathUnit(["/only/.git/logs/HEAD"]);
+    const matches = unit.match(/PathModified=\/only\/.git\/logs\/HEAD/g);
     assert.equal(matches?.length, 1);
+  });
+});
+
+// --- Integration: extractWatchPaths -> buildPathUnit ---
+
+describe("extractWatchPaths -> buildPathUnit integration", () => {
+  it("produces PathModified entries pointing at .git/logs/HEAD", () => {
+    existsFn = (p) => p.endsWith("/.git/logs/HEAD");
+    const collections = [
+      { path: "/repos/alpha", masks: ["docs"] },
+      { path: "/repos/beta", masks: ["docs"] },
+    ];
+    const watchPaths = extractWatchPaths(collections);
+    const unit = buildPathUnit(watchPaths);
+    assert.ok(unit.includes("PathModified=/repos/alpha/.git/logs/HEAD"));
+    assert.ok(unit.includes("PathModified=/repos/beta/.git/logs/HEAD"));
   });
 });

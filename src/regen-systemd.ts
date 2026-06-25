@@ -43,7 +43,7 @@ export function regenSystemd(configPath: string): void {
   const watchPaths = extractWatchPaths(config.collections || []);
 
   if (watchPaths.length === 0) {
-    console.error("  Error: no repo paths with .git/refs found");
+    console.error("  Error: no repo paths with .git/logs/HEAD found");
     process.exit(1);
   }
 

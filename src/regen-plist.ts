@@ -34,9 +34,13 @@ export function extractWatchPaths(collections: Collection[]): string[] {
   const paths: string[] = [];
   for (const col of collections) {
     const fullPath = expandHome(col.path);
-    const refsDir = `${fullPath}/.git/refs`;
-    if (existsSync(refsDir)) {
-      paths.push(refsDir);
+    const logsHead = `${fullPath}/.git/logs/HEAD`;
+    if (existsSync(logsHead)) {
+      paths.push(logsHead);
+    } else if (existsSync(`${fullPath}/.git`)) {
+      console.error(
+        `  SKIP ${col.path} — git reflogs disabled (enable with: git config core.logAllRefUpdates true)`,
+      );
     } else {
       console.error(`  SKIP ${col.path} — not a git repo`);
     }
@@ -56,7 +60,7 @@ export function regenPlist(configPath: string): void {
   const watchPaths = extractWatchPaths(config.collections || []);
 
   if (watchPaths.length === 0) {
-    console.error("  Error: no repo paths with .git/refs found");
+    console.error("  Error: no repo paths with .git/logs/HEAD found");
     process.exit(1);
   }
 

@@ -2,7 +2,7 @@
 
 CLI tool that manages [qmd](https://github.com/tobilu/qmd) collections, auto-indexing (launchd on macOS, systemd on Linux), and Claude Code integration.
 
-**Important:** After making changes, review and update all documentation that may be affected — this includes both this file (`CLAUDE.md`) and `README.md`.
+**Important:** After making changes, review this file and update it if your changes affect structure, commands, patterns, or conventions documented here.
 
 ## Quick reference
 
@@ -26,7 +26,7 @@ src/
   setup.test.ts         # tests for mergeMcpConfig, resolveConfigPath
   sync-collections.ts   # collection sync logic, types (Config, Collection), helpers
   sync-collections.test.ts  # tests for expandHome, buildGlob, parseCollectionNames
-  platform.ts           # platform detection (macos/linux)
+  scheduler.ts          # platform dispatch (darwin->launchd, linux->systemd)
   regen-plist.ts        # launchd plist generation (Mustache), extractWatchPaths
   regen-plist.test.ts   # tests for buildPlistXml, extractWatchPaths (mocked fs)
   regen-systemd.ts      # systemd service+path unit generation (Mustache)
@@ -36,7 +36,7 @@ templates/
   systemd-service.mustache  # Mustache template for systemd service unit (Linux)
   systemd-path.mustache     # Mustache template for systemd path unit (Linux)
 bin/
-  qmd-auto-embed.sh    # shell script triggered by launchd (qmd update + embed)
+  qmd-auto-embed.sh    # shell script triggered by launchd/systemd (qmd update + embed)
 fragments/
   mcp-server.json       # MCP server config fragment injected into ~/.claude.json
 skills/                 # Claude Code skills (symlinked to ~/.claude/skills/)

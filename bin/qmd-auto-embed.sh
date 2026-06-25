@@ -1,6 +1,6 @@
 #!/bin/bash
 # qmd-auto-embed: re-index changed collections and regenerate embeddings
-# Triggered by launchd when .git/refs change in any watched repo
+# Triggered by launchd (macOS) or systemd (Linux) when .git/logs/HEAD changes in a watched repo
 
 # launchd / systemd uses minimal PATH — build a useful one dynamically
 
