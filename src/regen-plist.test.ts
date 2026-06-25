@@ -13,7 +13,7 @@ const { constants: _fsConstants, ...fsWithoutConstants } = realFs as typeof real
   constants: unknown;
 };
 mock.module("node:fs", {
-  namedExports: { ...fsWithoutConstants, existsSync: (p: string) => existsFn(p) },
+  exports: { ...fsWithoutConstants, existsSync: (p: string) => existsFn(p) },
 });
 
 // Import AFTER mock — the module binds to our proxied existsSync.

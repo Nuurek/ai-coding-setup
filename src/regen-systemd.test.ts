@@ -10,7 +10,7 @@ const { constants: _fsConstants, ...fsWithoutConstants } = realFs as typeof real
   constants: unknown;
 };
 mock.module("node:fs", {
-  namedExports: { ...fsWithoutConstants, existsSync: (p: string) => existsFn(p) },
+  exports: { ...fsWithoutConstants, existsSync: (p: string) => existsFn(p) },
 });
 
 const { buildServiceUnit, buildPathUnit } = await import("./regen-systemd.js");
