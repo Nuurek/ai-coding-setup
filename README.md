@@ -120,4 +120,6 @@ npm run lint      # biome check
 npm run format    # biome format
 ```
 
+Both `package-lock.json` (npm) and `bun.lock` (bun) are committed. When adding or updating dependencies, run both `npm install` and `bun install` so both lockfiles stay in sync.
+
 Tests use Node's built-in `node:test` runner with `--experimental-test-module-mocks`.
