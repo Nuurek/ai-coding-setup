@@ -74,6 +74,36 @@ export function mergeStatusLine(
   return { action: "added", config: { ...existing, statusLine: fragment } };
 }
 
+const RTK_HOOK_COMMAND = "rtk hook claude";
+
+export function mergeHook(
+  existing: Record<string, unknown> | null,
+  fragment: Record<string, unknown>,
+): MergeResult {
+  if (!existing) {
+    return { action: "created", config: { hooks: { PreToolUse: [fragment] } } };
+  }
+
+  const hooks = (existing.hooks || {}) as Record<string, unknown>;
+  const preToolUse = (hooks.PreToolUse || []) as Array<Record<string, unknown>>;
+  const alreadyPresent = preToolUse.some((entry) =>
+    ((entry.hooks || []) as Array<Record<string, unknown>>).some(
+      (h) => h.command === RTK_HOOK_COMMAND,
+    ),
+  );
+  if (alreadyPresent) {
+    return { action: "exists", config: existing };
+  }
+
+  return {
+    action: "added",
+    config: {
+      ...existing,
+      hooks: { ...hooks, PreToolUse: [...preToolUse, fragment] },
+    },
+  };
+}
+
 function symlinkSafe(src: string, dst: string): void {
   if (lstatSync(dst, { throwIfNoEntry: false })?.isSymbolicLink()) {
     const current = readlinkSync(dst);
@@ -112,6 +142,7 @@ function main(configOverride?: string): void {
   symlinkSafe(`${REPO_DIR}/skills/qmd-add`, `${HOME}/.claude/skills/qmd-add`);
   symlinkSafe(`${REPO_DIR}/skills/qmd-update`, `${HOME}/.claude/skills/qmd-update`);
   symlinkSafe(`${REPO_DIR}/rules/qmd.md`, `${HOME}/.claude/rules/qmd.md`);
+  symlinkSafe(`${REPO_DIR}/rules/rtk.md`, `${HOME}/.claude/rules/rtk.md`);
   console.log("");
 
   // ── Step 3: Inject MCP config ──────────────────────────────────────
@@ -156,6 +187,25 @@ function main(configOverride?: string): void {
     added: "  ADD  status line",
   };
   console.log(slLabels[slAction]);
+  console.log("");
+
+  // ── Step 3c: Inject rtk PreToolUse hook ───────────────────────────
+  console.log("--- Configuring rtk hook ---");
+  const hookFragment = JSON.parse(readFileSync(`${REPO_DIR}/fragments/rtk-hook.json`, "utf-8"));
+  const existingSettings2 = existsSync(settingsPath)
+    ? JSON.parse(readFileSync(settingsPath, "utf-8"))
+    : null;
+  const { action: hookAction, config: hookConfig } = mergeHook(existingSettings2, hookFragment);
+  if (hookAction !== "exists") {
+    mkdirSync(`${HOME}/.claude`, { recursive: true });
+    writeFileSync(settingsPath, `${JSON.stringify(hookConfig, null, 2)}\n`);
+  }
+  const hookLabels = {
+    created: `  CREATE ${settingsPath}`,
+    exists: "  OK   rtk hook already configured",
+    added: "  ADD  rtk hook",
+  };
+  console.log(hookLabels[hookAction]);
   console.log("");
 
   // ── Step 4: Sync collections ───────────────────────────────────────

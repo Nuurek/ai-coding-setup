@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { afterEach, describe, it } from "node:test";
 import type { MergeResult } from "./setup.js";
-import { mergeMcpConfig, mergeStatusLine, resolveConfigPath } from "./setup.js";
+import { mergeHook, mergeMcpConfig, mergeStatusLine, resolveConfigPath } from "./setup.js";
 
 describe("mergeMcpConfig", () => {
   const fragment = { qmd: { command: "qmd", args: ["mcp"] } };
@@ -106,5 +106,62 @@ describe("resolveConfigPath", () => {
   it("override takes precedence over XDG_CONFIG_HOME", () => {
     process.env.XDG_CONFIG_HOME = "/tmp/xdg-test";
     assert.equal(resolveConfigPath("/custom/path.yaml"), "/custom/path.yaml");
+  });
+});
+
+describe("mergeHook", () => {
+  const fragment = { matcher: "Bash", hooks: [{ type: "command", command: "rtk hook claude" }] };
+
+  it("creates new settings when existing is null", () => {
+    const result: MergeResult = mergeHook(null, fragment);
+    assert.equal(result.action, "created");
+    assert.deepEqual(result.config, { hooks: { PreToolUse: [fragment] } });
+  });
+
+  it("returns exists when rtk hook already present", () => {
+    const existing = { hooks: { PreToolUse: [fragment] } };
+    const result = mergeHook(existing, fragment);
+    assert.equal(result.action, "exists");
+    assert.deepEqual(result.config, existing);
+  });
+
+  it("adds hook to settings with no hooks key", () => {
+    const existing = { model: "opusplan" };
+    const result = mergeHook(existing, fragment);
+    assert.equal(result.action, "added");
+    assert.deepEqual(result.config.hooks, { PreToolUse: [fragment] });
+  });
+
+  it("appends hook to existing PreToolUse array, preserving prior entries", () => {
+    const prior = { matcher: "Bash", hooks: [{ type: "command", command: "other hook" }] };
+    const existing = { hooks: { PreToolUse: [prior] } };
+    const result = mergeHook(existing, fragment);
+    assert.equal(result.action, "added");
+    assert.deepEqual((result.config.hooks as Record<string, unknown[]>).PreToolUse, [
+      prior,
+      fragment,
+    ]);
+  });
+
+  it("preserves other top-level keys", () => {
+    const existing = { statusLine: { type: "command", command: "echo hi" }, model: "sonnet" };
+    const result = mergeHook(existing, fragment);
+    assert.equal(result.action, "added");
+    assert.deepEqual((result.config as Record<string, unknown>).statusLine, existing.statusLine);
+    assert.equal((result.config as Record<string, unknown>).model, "sonnet");
+  });
+
+  it("preserves other hook types (PostToolUse)", () => {
+    const existing = {
+      hooks: {
+        PostToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "post hook" }] }],
+      },
+    };
+    const result = mergeHook(existing, fragment);
+    assert.equal(result.action, "added");
+    assert.deepEqual(
+      (result.config.hooks as Record<string, unknown>).PostToolUse,
+      existing.hooks.PostToolUse,
+    );
   });
 });

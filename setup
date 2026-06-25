@@ -76,6 +76,33 @@ else
   echo "  Installing qmd..."
   $PKG_MGR install -g @tobilu/qmd
 fi
+
+# Rebuild better-sqlite3 for the current Node version (handles Node upgrades)
+QMD_PKG_DIR=""
+if [ "$PKG_MGR" = "bun" ]; then
+  QMD_PKG_DIR="$HOME/.bun/install/global/node_modules/@tobilu/qmd"
+else
+  QMD_PKG_DIR="$(npm root -g 2>/dev/null)/@tobilu/qmd"
+fi
+if [ -d "$QMD_PKG_DIR/node_modules/better-sqlite3" ]; then
+  echo "  Rebuilding better-sqlite3 for Node $($NODE --version)..."
+  (cd "$QMD_PKG_DIR" && npm rebuild better-sqlite3 2>&1 | grep -v "^npm warn") || echo "  WARN: better-sqlite3 rebuild failed; qmd may not work"
+fi
+
+# ── Install rtk if needed (pinned) ──────────────────────────────────
+
+RTK_VERSION="v0.42.4"
+if command -v rtk &>/dev/null; then
+  echo "  rtk:  $(command -v rtk)"
+else
+  echo "  Installing rtk ${RTK_VERSION}..."
+  if curl -fsSL "https://raw.githubusercontent.com/rtk-ai/rtk/${RTK_VERSION}/install.sh" \
+       | RTK_VERSION="$RTK_VERSION" sh; then
+    echo "  rtk:  installed (${RTK_VERSION})"
+  else
+    echo "  WARN: rtk install failed; skipping (hook stays inactive until rtk is on PATH)"
+  fi
+fi
 echo ""
 
 # ── Install deps + compile ────────────────────────────────────────────
