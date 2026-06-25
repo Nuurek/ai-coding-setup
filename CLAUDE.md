@@ -1,6 +1,6 @@
 # ai-coding-setup
 
-CLI tool that manages [qmd](https://github.com/tobilu/qmd) collections, auto-indexing (launchd on macOS, systemd on Linux), and Claude Code integration.
+CLI tool that manages [qmd](https://github.com/tobilu/qmd) collections and [rtk](https://github.com/rtk-ai/rtk) token-efficient command output, auto-indexing (launchd on macOS, systemd on Linux), and Claude Code integration.
 
 **Important:** After making changes, review this file and update it if your changes affect structure, commands, patterns, or conventions documented here.
 
@@ -11,7 +11,7 @@ npm test                        # compile + run all tests
 npm run build                   # compile TypeScript only
 npm run lint                    # biome check
 npm run format                  # biome check --write
-ai-coding-setup                      # full setup (symlinks, MCP, status line, sync, index, scheduler)
+ai-coding-setup                      # full setup (symlinks, MCP, status line, rtk hook, sync, index, scheduler)
 ai-coding-setup sync                 # add collections from config to qmd
 ai-coding-setup sync --remove        # add + remove collections not in config
 ai-coding-setup regen-scheduler        # regenerate file-watcher (auto-detects platform)
@@ -22,8 +22,8 @@ ai-coding-setup -c path/to/config.yaml sync  # use custom config
 
 ```
 src/
-  setup.ts              # CLI entry point (commander), main setup flow, MCP config merge, status-line merge
-  setup.test.ts         # tests for mergeMcpConfig, mergeStatusLine, resolveConfigPath
+  setup.ts              # CLI entry point (commander), main setup flow, MCP config merge, status-line merge, rtk hook merge
+  setup.test.ts         # tests for mergeMcpConfig, mergeStatusLine, mergeHook, resolveConfigPath
   sync-collections.ts   # collection sync logic, types (Config, Collection), helpers
   sync-collections.test.ts  # tests for expandHome, buildGlob, parseCollectionNames
   scheduler.ts          # platform dispatch (darwin->launchd, linux->systemd)
@@ -40,10 +40,13 @@ bin/
 fragments/
   mcp-server.json       # MCP server config fragment injected into ~/.claude.json
   status-line.json      # statusLine block merged into ~/.claude/settings.json
+  rtk-hook.json         # PreToolUse hook fragment merged into ~/.claude/settings.json
 skills/                 # Claude Code skills (symlinked to ~/.claude/skills/)
 rules/                  # Claude Code rules (symlinked to ~/.claude/rules/)
+  qmd.md                # rule: use qmd before reading files
+  rtk.md                # rule: rtk rewrites Bash commands to token-efficient equivalents
 config.example.yaml     # example config for new users
-setup                   # bootstrap script (finds node, installs deps, runs setup)
+setup                   # bootstrap script (finds node, installs qmd + rtk@v0.42.4, runs setup)
 ```
 
 ## Config

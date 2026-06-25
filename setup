@@ -76,6 +76,21 @@ else
   echo "  Installing qmd..."
   $PKG_MGR install -g @tobilu/qmd
 fi
+
+# ── Install rtk if needed (pinned) ──────────────────────────────────
+
+RTK_VERSION="v0.42.4"
+if command -v rtk &>/dev/null; then
+  echo "  rtk:  $(command -v rtk)"
+else
+  echo "  Installing rtk ${RTK_VERSION}..."
+  if curl -fsSL "https://raw.githubusercontent.com/rtk-ai/rtk/${RTK_VERSION}/install.sh" \
+       | RTK_VERSION="$RTK_VERSION" sh; then
+    echo "  rtk:  installed (${RTK_VERSION})"
+  else
+    echo "  WARN: rtk install failed; skipping (hook stays inactive until rtk is on PATH)"
+  fi
+fi
 echo ""
 
 # ── Install deps + compile ────────────────────────────────────────────
