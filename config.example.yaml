@@ -24,6 +24,7 @@ masks:
     - hcl
   templates:
     - tpl
+    - mustache
   python:
     - py
   go:
