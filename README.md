@@ -1,4 +1,4 @@
-# qmd-setup
+# ai-coding-setup
 
 CLI tool that manages [qmd](https://github.com/tobilu/qmd) collections, auto-indexing, and [Claude Code](https://docs.anthropic.com/en/docs/claude-code) integration.
 
@@ -18,7 +18,7 @@ CLI tool that manages [qmd](https://github.com/tobilu/qmd) collections, auto-ind
 ## Install
 
 ```bash
-git clone <repo-url> && cd qmd-setup
+git clone <repo-url> && cd ai-coding-setup
 ./setup
 ```
 
@@ -26,7 +26,7 @@ The `setup` script:
 1. Finds a suitable Node.js (>= 22)
 2. Installs `qmd` globally if not present
 3. Installs npm dependencies and compiles TypeScript
-4. Runs `npm link` to make `qmd-setup` available on PATH
+4. Runs `npm link` to make `ai-coding-setup` available on PATH
 5. Executes the full setup flow (symlinks, MCP config, collection sync, scheduler)
 
 ## Configuration
@@ -59,19 +59,19 @@ Override config path with `-c` / `--config` on any command.
 
 ```bash
 # Full setup (symlinks, MCP config, sync, scheduler)
-qmd-setup
+ai-coding-setup
 
 # Sync collections from config into qmd
-qmd-setup sync
+ai-coding-setup sync
 
 # Sync and remove collections not in config
-qmd-setup sync --remove
+ai-coding-setup sync --remove
 
 # Regenerate file-watcher from config (auto-detects platform)
-qmd-setup regen-scheduler
+ai-coding-setup regen-scheduler
 
 # Use a custom config file
-qmd-setup -c /path/to/config.yaml sync
+ai-coding-setup -c /path/to/config.yaml sync
 ```
 
 ## How auto-indexing works
@@ -80,11 +80,11 @@ The watcher fires when `.git/logs/HEAD` changes in a configured collection. This
 
 ### macOS (launchd)
 
-`qmd-setup regen-scheduler` writes `~/Library/LaunchAgents/com.qmd.auto-embed.plist` and loads it with `launchctl`. Triggers are throttled (default: 30s, configurable via `launchd.throttle_interval`).
+`ai-coding-setup regen-scheduler` writes `~/Library/LaunchAgents/com.qmd.auto-embed.plist` and loads it with `launchctl`. Triggers are throttled (default: 30s, configurable via `launchd.throttle_interval`).
 
 ### Linux (systemd)
 
-`qmd-setup regen-scheduler` writes two systemd user units:
+`ai-coding-setup regen-scheduler` writes two systemd user units:
 
 - `~/.config/systemd/user/qmd-auto-embed.service` — runs `qmd-auto-embed.sh`
 - `~/.config/systemd/user/qmd-auto-embed.path` — watches `.git/logs/HEAD` in each collection
@@ -119,5 +119,7 @@ npm test          # compile + run tests
 npm run lint      # biome check
 npm run format    # biome format
 ```
+
+Both `package-lock.json` (npm) and `bun.lock` (bun) are committed. When adding or updating dependencies, run both `npm install` and `bun install` so both lockfiles stay in sync.
 
 Tests use Node's built-in `node:test` runner with `--experimental-test-module-mocks`.

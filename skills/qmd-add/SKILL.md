@@ -31,7 +31,7 @@ Add a new repository to the qmd index and update the configuration.
 
 6. **Sync, index, and rebuild**:
    ```
-   qmd-setup sync && qmd update && qmd embed && qmd-setup regen-scheduler
+   ai-coding-setup sync && qmd update && qmd embed && ai-coding-setup regen-scheduler
    ```
 
 7. **Report** the collection name, file count, and masks used.

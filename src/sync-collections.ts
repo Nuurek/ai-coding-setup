@@ -64,7 +64,7 @@ export function syncCollections(configPath: string, options?: SyncOptions): void
     mkdirSync(dirname(configPath), { recursive: true });
     copyFileSync(example, configPath);
     console.log(`  CREATE ${configPath} (copied from config.example.yaml)`);
-    console.log(`  Edit it to add your collections, then re-run qmd-setup.`);
+    console.log(`  Edit it to add your collections, then re-run ai-coding-setup.`);
   }
   const config: Config = parseYaml(readFileSync(configPath, "utf-8"));
   const masks = config.masks || {};

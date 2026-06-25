@@ -1,4 +1,4 @@
-# qmd-setup
+# ai-coding-setup
 
 CLI tool that manages [qmd](https://github.com/tobilu/qmd) collections, auto-indexing (launchd on macOS, systemd on Linux), and Claude Code integration.
 
@@ -11,11 +11,11 @@ npm test                        # compile + run all tests
 npm run build                   # compile TypeScript only
 npm run lint                    # biome check
 npm run format                  # biome check --write
-qmd-setup                      # full setup (symlinks, MCP, sync, index, scheduler)
-qmd-setup sync                 # add collections from config to qmd
-qmd-setup sync --remove        # add + remove collections not in config
-qmd-setup regen-scheduler        # regenerate file-watcher (auto-detects platform)
-qmd-setup -c path/to/config.yaml sync  # use custom config
+ai-coding-setup                      # full setup (symlinks, MCP, sync, index, scheduler)
+ai-coding-setup sync                 # add collections from config to qmd
+ai-coding-setup sync --remove        # add + remove collections not in config
+ai-coding-setup regen-scheduler        # regenerate file-watcher (auto-detects platform)
+ai-coding-setup -c path/to/config.yaml sync  # use custom config
 ```
 
 ## Project structure

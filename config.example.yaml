@@ -1,7 +1,7 @@
 # qmd collection configuration
 #
 # Location: ~/.config/qmd/config.yaml  (or $XDG_CONFIG_HOME/qmd/config.yaml)
-# Override:  qmd-setup --config /path/to/config.yaml
+# Override:  ai-coding-setup --config /path/to/config.yaml
 #
 # masks:  Named file extension profiles (combined into glob patterns)
 # collections:  Repos to index, referencing mask profiles
