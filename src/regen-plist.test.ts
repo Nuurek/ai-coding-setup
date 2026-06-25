@@ -8,8 +8,12 @@ import type { Collection } from "./sync-collections.js";
 // Proxy existsSync through a mutable reference so tests can swap behaviour.
 let existsFn: (p: string) => boolean = realFs.existsSync;
 
+// Spread all fs exports except `constants` (non-configurable in Node v26+, can't be redefined via mock)
+const { constants: _fsConstants, ...fsWithoutConstants } = realFs as typeof realFs & {
+  constants: unknown;
+};
 mock.module("node:fs", {
-  namedExports: { ...realFs, existsSync: (p: string) => existsFn(p) },
+  namedExports: { ...fsWithoutConstants, existsSync: (p: string) => existsFn(p) },
 });
 
 // Import AFTER mock — the module binds to our proxied existsSync.

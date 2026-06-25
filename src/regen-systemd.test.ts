@@ -5,8 +5,12 @@ import { afterEach, describe, it, mock } from "node:test";
 // --- Mock setup (same proxy pattern as regen-plist.test.ts) ---
 let existsFn: (p: string) => boolean = realFs.existsSync;
 
+// Spread all fs exports except `constants` (non-configurable in Node v26+, can't be redefined via mock)
+const { constants: _fsConstants, ...fsWithoutConstants } = realFs as typeof realFs & {
+  constants: unknown;
+};
 mock.module("node:fs", {
-  namedExports: { ...realFs, existsSync: (p: string) => existsFn(p) },
+  namedExports: { ...fsWithoutConstants, existsSync: (p: string) => existsFn(p) },
 });
 
 const { buildServiceUnit, buildPathUnit } = await import("./regen-systemd.js");
