@@ -55,6 +55,14 @@ find_node() {
 NODE=$(find_node) || { echo "ERROR: node >= 22 not found"; exit 1; }
 echo "  node: $NODE ($($NODE --version))"
 
+# Record the chosen node so qmd always runs under the same one. qmd's shebang is
+# `#!/usr/bin/env node`, and its better-sqlite3 binding is ABI-locked to a single
+# Node major — so the file-watcher (which runs under a minimal systemd/launchd
+# PATH) must not pick a different node than the one we build the binding against.
+NODE_PIN_DIR="$HOME/.local/state/ai-coding-setup"
+mkdir -p "$NODE_PIN_DIR"
+dirname "$NODE" > "$NODE_PIN_DIR/node-bin-dir"
+
 # ── Find package manager ─────────────────────────────────────────────
 
 PKG_MGR=""
@@ -77,16 +85,42 @@ else
   $PKG_MGR install -g @tobilu/qmd
 fi
 
-# Rebuild better-sqlite3 for the current Node version (handles Node upgrades)
-QMD_PKG_DIR=""
-if [ "$PKG_MGR" = "bun" ]; then
-  QMD_PKG_DIR="$HOME/.bun/install/global/node_modules/@tobilu/qmd"
+# ── Ensure better-sqlite3's native binding is built ──────────────────
+# bun skips postinstall scripts on global installs, so qmd's better-sqlite3
+# binding can be missing entirely. Its location varies by installer: bun
+# hoists it to the global root, npm may nest it under @tobilu/qmd.
+NPM_ROOT="$(npm root -g 2>/dev/null || true)"
+BSQLITE_ROOT=""
+for candidate in \
+  "$HOME/.bun/install/global" \
+  "$NPM_ROOT/@tobilu/qmd" \
+  "${NPM_ROOT%/node_modules}"
+do
+  if [ -n "$candidate" ] && [ -d "$candidate/node_modules/better-sqlite3" ]; then
+    BSQLITE_ROOT="$candidate"
+    break
+  fi
+done
+
+# better-sqlite3 resolves its native binding lazily in the Database constructor,
+# so requiring the module is not enough to prove the binding exists.
+binding_loads() {
+  (cd "$BSQLITE_ROOT" && "$NODE" -e "new (require('better-sqlite3'))(':memory:').close()") >/dev/null 2>&1
+}
+
+if [ -z "$BSQLITE_ROOT" ]; then
+  echo "  WARN: better-sqlite3 not found; qmd indexing may not work"
+elif binding_loads; then
+  echo "  sqlite: better-sqlite3 binding OK"
 else
-  QMD_PKG_DIR="$(npm root -g 2>/dev/null)/@tobilu/qmd"
-fi
-if [ -d "$QMD_PKG_DIR/node_modules/better-sqlite3" ]; then
-  echo "  Rebuilding better-sqlite3 for Node $($NODE --version)..."
-  (cd "$QMD_PKG_DIR" && npm rebuild better-sqlite3 2>&1 | grep -v "^npm warn") || echo "  WARN: better-sqlite3 rebuild failed; qmd may not work"
+  echo "  Building better-sqlite3 native binding..."
+  (cd "$BSQLITE_ROOT" && npm rebuild better-sqlite3 2>&1 | grep -v "^npm warn") || true
+  if binding_loads; then
+    echo "  sqlite: better-sqlite3 binding built"
+  else
+    echo "  WARN: better-sqlite3 build failed; qmd indexing will not work"
+    echo "        try: (cd $BSQLITE_ROOT && npm rebuild better-sqlite3)"
+  fi
 fi
 
 # ── Install rtk if needed (pinned) ──────────────────────────────────

@@ -216,7 +216,13 @@ function main(configOverride?: string): void {
 
   // ── Step 5: Build index + embeddings ───────────────────────────────
   console.log("--- Building index and embeddings ---");
-  execSync(`"${HOME}/.local/bin/qmd-auto-embed.sh"`, { stdio: "inherit" });
+  let indexOk = true;
+  try {
+    execSync(`"${HOME}/.local/bin/qmd-auto-embed.sh"`, { stdio: "inherit" });
+  } catch {
+    indexOk = false;
+    console.log("  WARN: indexing failed (see output above)");
+  }
   console.log(`  See log: ~/.local/log/qmd-auto-embed.log`);
   console.log("");
 
@@ -226,7 +232,12 @@ function main(configOverride?: string): void {
   scheduler.regen(configPath);
   console.log("");
 
-  console.log("=== Setup complete ===");
+  if (indexOk) {
+    console.log("=== Setup complete ===");
+  } else {
+    console.log("=== Setup finished with errors: qmd indexing failed ===");
+    process.exitCode = 1;
+  }
 }
 
 // --- CLI ---
