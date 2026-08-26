@@ -13,8 +13,8 @@
 
 terraform {
   required_providers {
-    coder  = { source = "coder/coder" }
-    docker = { source = "kreuzwerker/docker" }
+    coder  = { source = "coder/coder", version = "2.18.0" }
+    docker = { source = "kreuzwerker/docker", version = "4.5.0" }
   }
 }
 
@@ -39,8 +39,8 @@ data "coder_parameter" "repo_url" {
 }
 
 locals {
-  repo_name   = trimsuffix(basename(data.coder_parameter.repo_url.value), ".git")
-  home        = "/home/coder"
+  repo_name = trimsuffix(basename(data.coder_parameter.repo_url.value), ".git")
+  home      = "/home/coder"
   # Repo tree on a host bind mount at a path identical on host and in the outer
   # container, so the sibling Dev Container's bind-mount source resolves.
   workspace_root = "/var/lib/coder/workspaces/${data.coder_workspace.me.id}"
