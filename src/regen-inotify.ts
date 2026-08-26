@@ -51,14 +51,18 @@ function restartWatcher(): void {
     const pid = readFileSync(PID_FILE, "utf-8").trim();
     if (pid) {
       try {
-        execSync(`kill ${pid}`, { stdio: "pipe" });
+        // Negative pid = whole process group: the loop and its blocked inotifywait
+        // child share a group (see setsid below), so both die together.
+        execSync(`kill -- -${pid}`, { stdio: "pipe" });
       } catch {
         // already gone — nothing to kill
       }
     }
   }
-  // nohup + & detaches; the child reparents to init when this shell exits.
-  execSync(`nohup "${WATCH_SCRIPT}" >> "${LOG_FILE}" 2>&1 < /dev/null & echo $! > "${PID_FILE}"`, {
+  // setsid runs the watcher as a new session/group leader, detached from any
+  // controlling terminal; $! is that leader, whose group the inotifywait child
+  // inherits so restartWatcher() can reap the whole group above.
+  execSync(`setsid "${WATCH_SCRIPT}" >> "${LOG_FILE}" 2>&1 < /dev/null & echo $! > "${PID_FILE}"`, {
     stdio: "pipe",
     shell: "/bin/bash",
   });
