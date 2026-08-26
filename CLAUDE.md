@@ -1,6 +1,6 @@
 # ai-coding-setup
 
-CLI tool that manages [qmd](https://github.com/tobilu/qmd) collections and [rtk](https://github.com/rtk-ai/rtk) token-efficient command output, auto-indexing (launchd on macOS, systemd on Linux), and Claude Code integration.
+CLI tool that manages [qmd](https://github.com/tobilu/qmd) collections and [rtk](https://github.com/rtk-ai/rtk) token-efficient command output, auto-indexing (launchd on macOS, systemd on Linux, or an inotify fallback when systemd is absent — e.g. containers), and Claude Code integration.
 
 **Important:** After making changes, review this file and update it if your changes affect structure, commands, patterns, or conventions documented here.
 
@@ -26,15 +26,19 @@ src/
   setup.test.ts         # tests for mergeMcpConfig, mergeStatusLine, mergeHook, resolveConfigPath
   sync-collections.ts   # collection sync logic, types (Config, Collection), helpers
   sync-collections.test.ts  # tests for expandHome, buildGlob, parseCollectionNames
-  scheduler.ts          # platform dispatch (darwin->launchd, linux->systemd)
+  scheduler.ts          # capability dispatch (darwin->launchd; linux->systemd or inotify via hasSystemd())
+  scheduler.test.ts     # tests for hasSystemd, getScheduler (mocked fs + os)
   regen-plist.ts        # launchd plist generation (Mustache), extractWatchPaths
   regen-plist.test.ts   # tests for buildPlistXml, extractWatchPaths (mocked fs)
   regen-systemd.ts      # systemd service+path unit generation (Mustache)
   regen-systemd.test.ts # tests for buildServiceUnit, buildPathUnit
+  regen-inotify.ts      # inotify watcher generation (Mustache), container/no-init fallback
+  regen-inotify.test.ts # tests for buildWatchScript
 templates/
   launchd-plist.mustache    # Mustache template for launchd plist (macOS)
   systemd-service.mustache  # Mustache template for systemd service unit (Linux)
   systemd-path.mustache     # Mustache template for systemd path unit (Linux)
+  qmd-auto-embed-watch.mustache  # Mustache template for the inotify watch loop (Linux, no systemd)
 bin/
   qmd-auto-embed.sh    # shell script triggered by launchd/systemd (qmd update + embed)
 fragments/
@@ -88,3 +92,4 @@ Tests swap `existsFn` to control filesystem behavior, restored in `afterEach`.
 - **Pinned Node** (`~/.local/state/ai-coding-setup/node-bin-dir`): `setup` records the bin dir of the node it resolved; `bin/qmd-auto-embed.sh` prepends it to `PATH` at top priority. qmd's shebang is `#!/usr/bin/env node` and its `better-sqlite3` binding is ABI-locked to one Node major, so the interactive shell, the setup run, and the launchd/systemd watcher (minimal `PATH`) must all land on the same node — otherwise qmd dies with `NODE_MODULE_VERSION` mismatch. Re-run `./setup` after a Node upgrade to rebuild and re-pin.
 - **better-sqlite3 binding**: bun skips postinstall scripts on global installs, so `setup` builds the binding itself. Its location differs by installer (bun hoists to the global root, npm may nest under `@tobilu/qmd`) — both are searched. The health check opens an in-memory `Database`, because `require("better-sqlite3")` alone succeeds without the binding (it resolves lazily in the constructor).
 - **Failure propagation**: `qmd-auto-embed.sh` pipes qmd through `strip_progress`, so it checks `PIPESTATUS[0]` to report qmd's real exit code; `setup.ts` catches that and ends with a non-zero exit rather than printing "Setup complete".
+- **Scheduler capability selection**: `getScheduler()` branches Linux on `hasSystemd()` (`existsSync("/run/systemd/system")`): the systemd `.path` unit when init is running, else a detached `inotifywait` loop for containers. The container watcher has no init to autostart it, so it's relaunched by whoever re-runs `setup`/`regen-scheduler`; `restartWatcher()` is idempotent — it reaps the prior watcher's process group via a pidfile, then relaunches.
