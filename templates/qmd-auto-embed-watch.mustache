@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # qmd auto-embed watcher — container/no-init equivalent of the systemd .path unit.
-# Watches each repo's git reflog (.git/logs/HEAD) and runs qmd-auto-embed.sh on
-# every ref change (commit, pull, checkout, merge, reset). inotify is a kernel
-# feature and works in containers; only the systemd *service manager* is missing.
+# Runs qmd-auto-embed.sh on every git ref change in a watched repo's .git/logs/HEAD.
 set -u
 
 EMBED="$HOME/.local/bin/qmd-auto-embed.sh"
@@ -15,13 +13,13 @@ WATCH_PATHS=(
 )
 
 while true; do
-  # No -m: inotifywait exits after the first event and the loop re-arms. This also
-  # recovers when git atomically replaces a reflog (the old watch is dropped).
+  # No -m: exit after one event so the loop re-arms — this also recovers when git
+  # atomically replaces a reflog and drops the old watch.
   if inotifywait -q -e modify -e move_self -e delete_self \
        "${WATCH_PATHS[@]}" >/dev/null 2>&1; then
-    sleep "$DEBOUNCE"   # debounce: let the burst settle, then embed once
+    sleep "$DEBOUNCE"
     "$EMBED"
   else
-    sleep 2             # a watched path is momentarily missing; wait for it back
+    sleep 2  # a watched path is momentarily missing; wait for it back
   fi
 done

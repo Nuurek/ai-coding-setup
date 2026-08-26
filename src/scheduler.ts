@@ -9,8 +9,7 @@ export interface Scheduler {
   regen(configPath: string): void;
 }
 
-// systemd is only usable when its runtime dir exists (i.e. it's running as PID 1).
-// Inside a container there is no init, so fall back to a raw inotify watcher.
+// systemd's runtime dir only exists when it's running as init; absent in containers.
 export function hasSystemd(): boolean {
   return existsSync("/run/systemd/system");
 }

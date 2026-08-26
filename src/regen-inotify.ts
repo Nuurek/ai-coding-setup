@@ -19,7 +19,6 @@ function loadTemplate(name: string): string {
   return readFileSync(resolve(REPO_DIR, "templates", name), "utf-8");
 }
 
-// Pure + unit-testable (mirror buildServiceUnit/buildPathUnit in regen-systemd.ts).
 export function buildWatchScript(watchPaths: string[]): string {
   return Mustache.render(loadTemplate("qmd-auto-embed-watch.mustache"), { watchPaths });
 }
@@ -29,7 +28,7 @@ function ensureInotifywait(): boolean {
     execSync("command -v inotifywait", { stdio: "pipe" });
     return true;
   } catch {
-    // not installed — fall through to install attempt
+    // not installed
   }
   console.log("  Installing inotify-tools...");
   try {
@@ -38,7 +37,6 @@ function ensureInotifywait(): boolean {
     });
     return true;
   } catch {
-    // install failed — leave it to the user to install and re-run
     console.error("  WARN: could not install inotify-tools; watcher not started.");
     console.error("        install it, then run: ai-coding-setup regen-scheduler");
     return false;
@@ -46,22 +44,18 @@ function ensureInotifywait(): boolean {
 }
 
 function restartWatcher(): void {
-  // Kill any previous watcher so we re-arm with the current watch paths.
   if (existsSync(PID_FILE)) {
     const pid = readFileSync(PID_FILE, "utf-8").trim();
     if (pid) {
       try {
-        // Negative pid = whole process group: the loop and its blocked inotifywait
-        // child share a group (see setsid below), so both die together.
+        // negative pid kills the whole group: the loop and its blocked inotifywait child
         execSync(`kill -- -${pid}`, { stdio: "pipe" });
       } catch {
-        // already gone — nothing to kill
+        // already gone
       }
     }
   }
-  // setsid runs the watcher as a new session/group leader, detached from any
-  // controlling terminal; $! is that leader, whose group the inotifywait child
-  // inherits so restartWatcher() can reap the whole group above.
+  // setsid detaches into its own group so the kill above can reap loop + child together
   execSync(`setsid "${WATCH_SCRIPT}" >> "${LOG_FILE}" 2>&1 < /dev/null & echo $! > "${PID_FILE}"`, {
     stdio: "pipe",
     shell: "/bin/bash",
