@@ -1,0 +1,27 @@
+{
+  "id": "tooling",
+  "version": "1.0.0",
+  "name": "ai-coding-setup tooling",
+  "description": "qmd codebase search (with change-triggered re-indexing), rtk, and their Claude Code integration.",
+  "documentationURL": "https://github.com/Nuurek/ai-coding-setup",
+  "options": {
+    "ref": {
+      "type": "string",
+      "default": "main",
+      "description": "Git ref (branch, tag or commit SHA) of ai-coding-setup to install."
+    },
+    "qmdConfig": {
+      "type": "string",
+      "default": ".devcontainer/qmd-config.yaml",
+      "description": "qmd config, relative to the workspace folder. If absent, the workspace folder is indexed with every mask profile."
+    },
+    "rtkVersion": {
+      "type": "string",
+      "default": "v0.42.4",
+      "description": "rtk release to install."
+    }
+  },
+  "installsAfter": ["ghcr.io/devcontainers/features/node"],
+  "postCreateCommand": "ai-coding-setup-init create",
+  "postStartCommand": "ai-coding-setup-init start"
+}

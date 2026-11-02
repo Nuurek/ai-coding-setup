@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# Per-user half of the feature, run as the remote user from the lifecycle hooks
+# (cwd = workspace folder).
+#   create — on container creation: write qmd config, then full ai-coding-setup
+#            (Claude Code wiring, collections, index + embeddings, watcher)
+#   start  — on every start: relaunch the inotify watcher; a container has no
+#            init to bring it back after a restart
+set -euo pipefail
+
+MODE="${1:?usage: ai-coding-setup-init create|start}"
+PREFIX="/usr/local/share/ai-coding-setup"
+# shellcheck source=/dev/null
+. /usr/local/etc/ai-coding-setup/feature.env
+
+WORKSPACE="${AI_CODING_SETUP_WORKSPACE:-$PWD}"
+CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/qmd/config.yaml"
+
+case "$MODE" in
+  create)
+    # A volume that already existed when mounted keeps its own (often root)
+    # ownership; qmd's index and Claude's config must be user-writable.
+    for d in "$HOME/.cache/qmd" "$HOME/.claude"; do
+      if [ -d "$d" ] && [ ! -w "$d" ]; then
+        sudo -n chown -R "$(id -u):$(id -g)" "$d" \
+          || { echo "ERROR: $d is not writable by $(id -un)" >&2; exit 1; }
+      fi
+    done
+
+    # Same pin ./setup writes: the watcher runs qmd under this node.
+    mkdir -p "$HOME/.local/state/ai-coding-setup" "$(dirname "$CONFIG")"
+    dirname "$(command -v node)" > "$HOME/.local/state/ai-coding-setup/node-bin-dir"
+
+    if [ -f "$WORKSPACE/$QMD_CONFIG" ]; then
+      install -m 0644 "$WORKSPACE/$QMD_CONFIG" "$CONFIG"
+      echo "qmd config: $WORKSPACE/$QMD_CONFIG"
+    else
+      # Index the workspace with every mask profile from the example config.
+      node --input-type=module - "$PREFIX" "$WORKSPACE" "$CONFIG" <<'EOF'
+import { readFileSync, writeFileSync } from "node:fs";
+import { basename } from "node:path";
+import { createRequire } from "node:module";
+const [prefix, workspace, out] = process.argv.slice(2);
+const YAML = createRequire(`${prefix}/package.json`)("yaml");
+const example = YAML.parse(readFileSync(`${prefix}/config.example.yaml`, "utf-8"));
+const config = {
+  masks: example.masks,
+  collections: [
+    { path: workspace, name: basename(workspace), masks: Object.keys(example.masks) },
+  ],
+};
+writeFileSync(out, YAML.stringify(config));
+EOF
+      echo "qmd config: generated for $WORKSPACE"
+    fi
+
+    ai-coding-setup
+    ;;
+  start)
+    [ -f "$CONFIG" ] || { echo "no qmd config yet; skipping watcher"; exit 0; }
+    ai-coding-setup regen-scheduler
+    ;;
+  *)
+    echo "usage: ai-coding-setup-init create|start" >&2
+    exit 2
+    ;;
+esac
