@@ -1,0 +1,31 @@
+name: Release devcontainer features
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["features/src/**"]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # Stage the built CLI into features/src/tooling/bundle (gitignored); the
+      # published Feature ships it instead of cloning this repo at image build.
+      - run: features/bundle.sh
+      # Publishes features/src/<id> to ghcr.io/<owner>/<repo>/<id>, tagged from
+      # each devcontainer-feature.json "version" (1, 1.0, 1.0.0, latest).
+      - uses: devcontainers/action@v1
+        with:
+          publish-features: "true"
+          base-path-to-features: "./features/src"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

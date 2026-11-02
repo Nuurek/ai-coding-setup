@@ -46,12 +46,32 @@ fi
 # User local bin
 export PATH="$HOME/.local/bin:$PATH"
 
+# Node pinned by ./setup — highest priority. qmd's better-sqlite3 binding is
+# ABI-locked to one Node major, and setup built it against this exact node.
+# Without this, the heuristics above can pick a different version and qmd dies
+# with NODE_MODULE_VERSION mismatch.
+_pin_file="$HOME/.local/state/ai-coding-setup/node-bin-dir"
+if [ -r "$_pin_file" ]; then
+  _pin_dir=$(cat "$_pin_file")
+  [ -n "$_pin_dir" ] && [ -x "$_pin_dir/node" ] && export PATH="$_pin_dir:$PATH"
+fi
+
 # Strip terminal progress bars and OSC escape sequences from qmd output
 strip_progress() {
   tr '\r' '\n' | grep -vE '^Indexing:|]9;|^[[:space:]]*$'
 }
 
 echo "--- $(date '+%Y-%m-%d %H:%M:%S') ---"
+
+# Report the real qmd exit status, not strip_progress's, so callers see failures
+status=0
 qmd update 2>&1 | strip_progress
+[ "${PIPESTATUS[0]}" -eq 0 ] || status=1
 qmd embed 2>&1 | strip_progress
+[ "${PIPESTATUS[0]}" -eq 0 ] || status=1
+
+if [ "$status" -ne 0 ]; then
+  echo "ERROR: qmd update/embed failed"
+  exit 1
+fi
 echo "done"

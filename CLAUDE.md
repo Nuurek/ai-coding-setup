@@ -51,7 +51,21 @@ rules/                  # Claude Code rules (symlinked to ~/.claude/rules/)
   rtk.md                # rule: rtk rewrites Bash commands to token-efficient equivalents
 config.example.yaml     # example config for new users
 setup                   # bootstrap script (finds node, installs qmd + rtk@v0.42.4, runs setup)
+features/
+  bundle.sh             # builds the CLI and stages runtime files into src/tooling/bundle/ (gitignored)
+  src/tooling/          # devcontainer Feature, published as ghcr.io/nuurek/ai-coding-setup/tooling
+    devcontainer-feature.json  # options (qmdConfig, rtkVersion) + lifecycle hooks
+    install.sh          # image build, as root: inotify-tools, bundled CLI, qmd, rtk
+    ai-coding-setup-init  # lifecycle, as remote user: `create` = qmd config + full setup, `start` = relaunch watcher
+coder/                  # Coder template (outer workspace container + sibling Dev Container, GPU)
+.github/workflows/release-features.yml  # publishes features/src/* to GHCR on push to main
 ```
+
+The Feature ships its own copy of the CLI (staged by `features/bundle.sh`) rather than cloning this
+repo, so its `version` in `devcontainer-feature.json` pins the code — bump it to publish CLI changes
+to devcontainers. Its rtk version default mirrors `RTK_VERSION` in `setup` — bump both together.
+To test locally: run `features/bundle.sh`, then reference `features/src/tooling` as a local Feature
+(copy it into a test project's `.devcontainer/`).
 
 ## Config
 
@@ -89,4 +103,7 @@ Tests swap `existsFn` to control filesystem behavior, restored in `afterEach`.
 - **`REPO_DIR`**: `resolve(dirname(fileURLToPath(import.meta.url)), "..")` — used to locate templates, fragments, and bin scripts at runtime
 - **`expandHome`**: replaces leading `~` with `homedir()` — used for all config paths
 - **Config closure in CLI**: `const configPath = () => resolveConfigPath(program.opts().config)` — deferred because `program.opts()` is only populated after `program.parse()`
+- **Pinned Node** (`~/.local/state/ai-coding-setup/node-bin-dir`): `setup` records the bin dir of the node it resolved; `bin/qmd-auto-embed.sh` prepends it to `PATH` at top priority. qmd's shebang is `#!/usr/bin/env node` and its `better-sqlite3` binding is ABI-locked to one Node major, so the interactive shell, the setup run, and the launchd/systemd watcher (minimal `PATH`) must all land on the same node — otherwise qmd dies with `NODE_MODULE_VERSION` mismatch. Re-run `./setup` after a Node upgrade to rebuild and re-pin.
+- **better-sqlite3 binding**: bun skips postinstall scripts on global installs, so `setup` builds the binding itself. Its location differs by installer (bun hoists to the global root, npm may nest under `@tobilu/qmd`) — both are searched. The health check opens an in-memory `Database`, because `require("better-sqlite3")` alone succeeds without the binding (it resolves lazily in the constructor).
+- **Failure propagation**: `qmd-auto-embed.sh` pipes qmd through `strip_progress`, so it checks `PIPESTATUS[0]` to report qmd's real exit code; `setup.ts` catches that and ends with a non-zero exit rather than printing "Setup complete".
 - **Scheduler capability selection**: `getScheduler()` branches Linux on `hasSystemd()` (`existsSync("/run/systemd/system")`): the systemd `.path` unit when init is running, else a detached `inotifywait` loop for containers. The container watcher has no init to autostart it, so it's relaunched by whoever re-runs `setup`/`regen-scheduler`; `restartWatcher()` is idempotent — it reaps the prior watcher's process group via a pidfile, then relaunches.
