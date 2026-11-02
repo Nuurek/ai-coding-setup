@@ -31,15 +31,22 @@ data "coder_external_auth" "github" {
   id = "github"
 }
 
-data "coder_parameter" "repo_url" {
-  name         = "repo_url"
-  display_name = "Repository"
-  description  = "Git URL to clone; its .devcontainer is built."
+data "coder_parameter" "repo_urls" {
+  name         = "repo_urls"
+  display_name = "Repositories"
+  description  = "Git URLs to clone. Only the first is used for now; its .devcontainer is built."
+  type         = "list(string)"
+  form_type    = "tag-select"
+  default      = jsonencode([])
   mutable      = true
 }
 
 locals {
-  repo_name = trimsuffix(basename(data.coder_parameter.repo_url.value), ".git")
+  # Multi-repo is future-proofing: only the first URL is cloned and built today.
+  # try(): template import plans with the empty default, before any URL is set.
+  repo_urls = jsondecode(data.coder_parameter.repo_urls.value)
+  repo_url  = try(local.repo_urls[0], "")
+  repo_name = trimsuffix(basename(local.repo_url), ".git")
   home      = "/home/coder"
   # Repo tree on a host bind mount at a path identical on host and in the outer
   # container, so the sibling Dev Container's bind-mount source resolves.
@@ -56,7 +63,7 @@ resource "coder_agent" "main" {
     sudo mkdir -p "${local.repo_folder}"
     sudo chown -R coder:coder "${local.workspace_root}"
     if [ ! -d "${local.repo_folder}/.git" ]; then
-      git clone "${data.coder_parameter.repo_url.value}" "${local.repo_folder}"
+      git clone "${local.repo_url}" "${local.repo_folder}"
     else
       # Pull so devcontainer changes on the default branch land on restart.
       git -C "${local.repo_folder}" pull --ff-only || true
