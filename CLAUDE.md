@@ -51,16 +51,21 @@ rules/                  # Claude Code rules (symlinked to ~/.claude/rules/)
   rtk.md                # rule: rtk rewrites Bash commands to token-efficient equivalents
 config.example.yaml     # example config for new users
 setup                   # bootstrap script (finds node, installs qmd + rtk@v0.42.4, runs setup)
-features/src/tooling/   # devcontainer Feature, published as ghcr.io/nuurek/ai-coding-setup/tooling
-  devcontainer-feature.json  # options (ref, qmdConfig, rtkVersion) + lifecycle hooks
-  install.sh            # image build, as root: inotify-tools, this repo @ ref (npm link), qmd, rtk
-  ai-coding-setup-init  # lifecycle, as remote user: `create` = qmd config + full setup, `start` = relaunch watcher
+features/
+  bundle.sh             # builds the CLI and stages runtime files into src/tooling/bundle/ (gitignored)
+  src/tooling/          # devcontainer Feature, published as ghcr.io/nuurek/ai-coding-setup/tooling
+    devcontainer-feature.json  # options (qmdConfig, rtkVersion) + lifecycle hooks
+    install.sh          # image build, as root: inotify-tools, bundled CLI, qmd, rtk
+    ai-coding-setup-init  # lifecycle, as remote user: `create` = qmd config + full setup, `start` = relaunch watcher
 coder/                  # Coder template (outer workspace container + sibling Dev Container, GPU)
 .github/workflows/release-features.yml  # publishes features/src/* to GHCR on push to main
 ```
 
-The Feature's rtk version default mirrors `RTK_VERSION` in `setup` — bump both together. Bump the
-Feature's `version` in `devcontainer-feature.json` to publish a new release.
+The Feature ships its own copy of the CLI (staged by `features/bundle.sh`) rather than cloning this
+repo, so its `version` in `devcontainer-feature.json` pins the code — bump it to publish CLI changes
+to devcontainers. Its rtk version default mirrors `RTK_VERSION` in `setup` — bump both together.
+To test locally: run `features/bundle.sh`, then reference `features/src/tooling` as a local Feature
+(copy it into a test project's `.devcontainer/`).
 
 ## Config
 

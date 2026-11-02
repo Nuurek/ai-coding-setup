@@ -4,13 +4,16 @@
 # later from the lifecycle hooks via ai-coding-setup-init.
 set -euo pipefail
 
-REF="${REF:-main}"
 QMD_CONFIG="${QMDCONFIG:-.devcontainer/qmd-config.yaml}"
 RTK_VERSION="${RTKVERSION:-v0.42.4}"
 
-REPO_URL="https://github.com/Nuurek/ai-coding-setup.git"
 PREFIX="/usr/local/share/ai-coding-setup"
 FEATURE_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if [ ! -f "$FEATURE_DIR/bundle/dist/setup.js" ]; then
+  echo "ERROR: bundle/ missing; run features/bundle.sh before packaging" >&2
+  exit 1
+fi
 
 if ! command -v node >/dev/null 2>&1; then
   echo "ERROR: node >= 22 not found; add ghcr.io/devcontainers/features/node" >&2
@@ -25,16 +28,18 @@ echo "--- System packages ---"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 # inotify-tools: the watcher used when systemd is absent (always, in a container).
-apt-get install -y --no-install-recommends ca-certificates curl git inotify-tools
+apt-get install -y --no-install-recommends ca-certificates curl inotify-tools
 rm -rf /var/lib/apt/lists/*
 
-echo "--- ai-coding-setup @ ${REF} ---"
+echo "--- ai-coding-setup ---"
+# Code ships inside the Feature (staged by features/bundle.sh), so the image
+# build needs no access to the repo and the Feature version pins the code.
 rm -rf "$PREFIX"
-git init -q "$PREFIX"
-# fetch (not clone --branch) so REF may also be a commit SHA
-git -C "$PREFIX" fetch -q --depth 1 "$REPO_URL" "$REF"
-git -C "$PREFIX" checkout -q FETCH_HEAD
-(cd "$PREFIX" && npm ci --no-audit --no-fund && npx tsc && npm link)
+cp -R "$FEATURE_DIR/bundle" "$PREFIX"
+# --ignore-scripts: the root "prepare" script needs a git checkout; the runtime
+# deps (commander, mustache, yaml) have no install scripts of their own.
+(cd "$PREFIX" && npm ci --omit=dev --ignore-scripts --no-audit --no-fund)
+ln -sf "$PREFIX/dist/setup.js" /usr/local/bin/ai-coding-setup
 
 echo "--- qmd ---"
 npm install -g --no-audit --no-fund @tobilu/qmd

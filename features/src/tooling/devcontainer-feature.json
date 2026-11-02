@@ -5,11 +5,6 @@
   "description": "qmd codebase search (with change-triggered re-indexing), rtk, and their Claude Code integration.",
   "documentationURL": "https://github.com/Nuurek/ai-coding-setup",
   "options": {
-    "ref": {
-      "type": "string",
-      "default": "main",
-      "description": "Git ref (branch, tag or commit SHA) of ai-coding-setup to install."
-    },
     "qmdConfig": {
       "type": "string",
       "default": ".devcontainer/qmd-config.yaml",

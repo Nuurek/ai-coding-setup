@@ -4,3 +4,5 @@ dist/
 node_modules/
 
 .terraform
+# built by features/bundle.sh at publish time
+features/src/tooling/bundle/
