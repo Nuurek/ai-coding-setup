@@ -53,11 +53,21 @@ locals {
   # container, so the sibling Dev Container's bind-mount source resolves.
   workspace_root = "/var/lib/coder/workspaces/${data.coder_workspace.me.id}"
   repo_folder    = "${local.workspace_root}/${local.repo_name}"
+
+  git_name  = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
+  git_email = data.coder_workspace_owner.me.email
+  git_env = {
+    GIT_AUTHOR_NAME     = local.git_name
+    GIT_AUTHOR_EMAIL    = local.git_email
+    GIT_COMMITTER_NAME  = local.git_name
+    GIT_COMMITTER_EMAIL = local.git_email
+  }
 }
 
 resource "coder_agent" "main" {
   arch = data.coder_provisioner.me.arch
   os   = "linux"
+  env  = local.git_env
   startup_script = templatefile("${path.module}/scripts/startup.sh.tftpl", {
     repo_url       = local.repo_url
     repo_folder    = local.repo_folder
@@ -93,6 +103,22 @@ resource "coder_devcontainer" "project" {
   count            = local.repo_url == "" ? 0 : data.coder_workspace.me.start_count
   agent_id         = coder_agent.main.id
   workspace_folder = local.repo_folder
+}
+
+# The Dev Container runs its own sub-agent, which doesn't inherit coder_agent.main's env.
+resource "coder_env" "devcontainer_git" {
+  for_each = length(coder_devcontainer.project) > 0 ? local.git_env : {}
+  agent_id = coder_devcontainer.project[0].subagent_id
+  name     = each.key
+  value    = each.value
+}
+
+resource "coder_script" "devcontainer_gh" {
+  count        = length(coder_devcontainer.project)
+  agent_id     = coder_devcontainer.project[0].subagent_id
+  display_name = "gh auth"
+  script       = file("${path.module}/scripts/gh-wrapper.sh")
+  run_on_start = true
 }
 
 resource "docker_volume" "home" {
