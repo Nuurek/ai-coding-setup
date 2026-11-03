@@ -1,0 +1,25 @@
+{
+  "name": "ai-coding-setup",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/node:2": {
+      "version": "22",
+      "installYarnUsingApt": false
+    },
+    "ghcr.io/devcontainers/features/terraform:1": {
+      "version": "1.17.1",
+      "tflint": "none",
+      "terragrunt": "none"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/nuurek/ai-coding-setup/tooling:1": {}
+  },
+  "mounts": [
+    "source=acs-claude,target=/home/vscode/.claude,type=volume",
+    "source=qmd-models,target=/home/vscode/.cache/qmd/models,type=volume"
+  ],
+  "postCreateCommand": "npm ci",
+  "waitFor": "postCreateCommand"
+}
