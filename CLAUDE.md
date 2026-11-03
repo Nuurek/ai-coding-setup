@@ -60,7 +60,7 @@ features/
 coder/                  # Coder template (outer workspace container + sibling Dev Container, GPU)
   scripts/              # agent scripts loaded by main.tf (file()/templatefile()), not inlined
 .github/workflows/
-  test.yml              # lint + tests on PRs
+  test.yml              # lefthook checks on all files + tests, on PRs
   release-features.yml  # publishes features/src/* to GHCR on push to main
 ```
 
@@ -83,7 +83,7 @@ Types are defined in `sync-collections.ts`: `Config`, `Collection`, `LaunchdConf
 - **TypeScript** (ES2022, NodeNext modules) — compiled to `dist/`
 - **Node.js >= 22** — required for `node:test` module mocking
 - **Biome** — linting and formatting (double quotes, semicolons, 2-space indent, 100 line width)
-- **lint-staged** — pre-commit hook via `.githooks/pre-commit`
+- **lefthook** — pre-commit hook (`lefthook.yml`): biome, shellcheck, terraform fmt/validate. CI runs the same hook with `--all-files`. Needs `shellcheck` and `terraform` on PATH
 - **Commander.js** — CLI argument parsing
 - **Mustache** — template rendering (plist/systemd unit generation). Uses triple-mustache `{{{var}}}` for filesystem paths (no HTML escaping)
 - **yaml** — config file parsing
