@@ -37,14 +37,15 @@ data "coder_parameter" "repo_urls" {
   description  = "Git URLs to clone. Only the first is used for now; its .devcontainer is built."
   type         = "list(string)"
   form_type    = "tag-select"
-  default      = jsonencode([])
-  mutable      = true
+  # No default, so creating a workspace asks for it. Coder allows no regex
+  # validation on list types; an empty list is handled in the startup script.
+  mutable = true
 }
 
 locals {
   # Multi-repo is future-proofing: only the first URL is cloned and built today.
-  # try(): template import plans with the empty default, before any URL is set.
-  repo_urls = jsondecode(data.coder_parameter.repo_urls.value)
+  # try(): template import plans with value "" (no default).
+  repo_urls = try(jsondecode(data.coder_parameter.repo_urls.value), [])
   repo_url  = try(local.repo_urls[0], "")
   repo_name = trimsuffix(basename(local.repo_url), ".git")
   home      = "/home/coder"
@@ -55,25 +56,19 @@ locals {
 }
 
 resource "coder_agent" "main" {
-  arch           = data.coder_provisioner.me.arch
-  os             = "linux"
-  startup_script = <<-EOT
-    set -eux
-    # Docker creates the bind-mount dir as root; take ownership before cloning.
-    sudo mkdir -p "${local.repo_folder}"
-    sudo chown -R coder:coder "${local.workspace_root}"
-    if [ ! -d "${local.repo_folder}/.git" ]; then
-      git clone "${local.repo_url}" "${local.repo_folder}"
-    else
-      # Pull so devcontainer changes on the default branch land on restart.
-      git -C "${local.repo_folder}" pull --ff-only || true
-    fi
-  EOT
+  arch = data.coder_provisioner.me.arch
+  os   = "linux"
+  startup_script = templatefile("${path.module}/scripts/startup.sh.tftpl", {
+    repo_url       = local.repo_url
+    repo_folder    = local.repo_folder
+    workspace_root = local.workspace_root
+    ignored_urls   = slice(local.repo_urls, min(1, length(local.repo_urls)), length(local.repo_urls))
+  })
 
   metadata {
     display_name = "GPU"
     key          = "gpu"
-    script       = "nvidia-smi --query-gpu=name,utilization.gpu,memory.used --format=csv,noheader || echo 'no GPU'"
+    script       = file("${path.module}/scripts/gpu-metadata.sh")
     interval     = 30
     timeout      = 5
   }
@@ -95,7 +90,7 @@ resource "coder_agent" "main" {
 
 # Coder's native Dev Containers integration builds ${local.repo_folder}/.devcontainer.
 resource "coder_devcontainer" "project" {
-  count            = data.coder_workspace.me.start_count
+  count            = local.repo_url == "" ? 0 : data.coder_workspace.me.start_count
   agent_id         = coder_agent.main.id
   workspace_folder = local.repo_folder
 }
@@ -108,8 +103,10 @@ resource "docker_volume" "home" {
 }
 
 # Outer image: Coder agent runtime + Docker CLI + Node + @devcontainers/cli.
+# Shared across workspaces (same tag), so deleting one workspace must not remove it.
 resource "docker_image" "outer" {
-  name = "coder-devcontainer-outer:latest"
+  name         = "coder-devcontainer-outer:latest"
+  keep_locally = true
   build {
     context    = path.module
     dockerfile = "outer.Dockerfile"
