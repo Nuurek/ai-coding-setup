@@ -2,8 +2,6 @@ name: Test
 
 on:
   pull_request:
-  push:
-    branches: [main]
 
 permissions:
   contents: read
@@ -12,10 +10,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
-      # Report each Node version, rather than cancelling the rest on the first failure.
       fail-fast: false
       matrix:
-        # 22 is the floor (node:test module mocking); 24 matches the release workflow.
         node-version: [22, 24]
     steps:
       - uses: actions/checkout@v4
