@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Outer workspace container startup: clone the repo whose .devcontainer Coder builds.
+# Rendered by templatefile() in main.tf; only the values below are Terraform-filled.
+set -euxo pipefail
+
+REPO_URL='${repo_url}'
+REPO_FOLDER='${repo_folder}'
+WORKSPACE_ROOT='${workspace_root}'
+IGNORED_URLS=(%{ for url in ignored_urls ~}'${url}' %{ endfor ~})
+
+if [ -z "$REPO_URL" ]; then
+  echo "repo_urls is empty: no repo cloned, no Dev Container built."
+  echo "Add a Git URL under Workspace settings > Parameters, then restart."
+  exit 0
+fi
+
+for url in "$${IGNORED_URLS[@]}"; do
+  echo "repo_urls: ignoring $url (only the first repo is used for now)"
+done
+
+# Docker creates the bind-mount dir as root; take ownership before cloning.
+sudo mkdir -p "$REPO_FOLDER"
+sudo chown -R coder:coder "$WORKSPACE_ROOT"
+if [ ! -d "$REPO_FOLDER/.git" ]; then
+  git clone "$REPO_URL" "$REPO_FOLDER"
+else
+  # Pull so devcontainer changes on the default branch land on restart.
+  git -C "$REPO_FOLDER" pull --ff-only || true
+fi
