@@ -60,7 +60,7 @@ features/
 coder/                  # Coder template (outer workspace container + sibling Dev Container, GPU)
   scripts/              # agent scripts loaded by main.tf (file()/templatefile()), not inlined
 .github/workflows/
-  test.yml              # lint + tests on PRs
+  test.yml              # lint, tests, shellcheck, terraform validate on PRs
   release-features.yml  # publishes features/src/* to GHCR on push to main
 ```
 

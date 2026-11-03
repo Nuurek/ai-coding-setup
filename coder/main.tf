@@ -7,9 +7,6 @@
 # by the host daemon, so the repo lives on a host bind mount at a path identical on
 # the host and in the outer container (workspace_root below). /home/coder is a
 # separate persistent volume for tool state across idle autostop/restart.
-#
-# Not CI-validated: run `terraform init && terraform validate` and a test
-# `coder templates push`, and pin provider versions to your Coder server.
 
 terraform {
   required_providers {
