@@ -7,6 +7,21 @@ permissions:
   contents: read
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+      - run: npm ci
+      - run: npx lefthook run pre-commit --all-files
+      - run: git diff --exit-code
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -20,26 +35,4 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: npm
       - run: npm ci
-      - run: npm run lint
       - run: npm test
-
-  shellcheck:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: >-
-          shellcheck --severity=warning
-          .githooks/pre-commit setup bin/*.sh coder/scripts/*.sh
-          features/bundle.sh features/src/tooling/install.sh features/src/tooling/ai-coding-setup-init
-
-  terraform:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: coder
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
-      - run: terraform fmt -check
-      - run: terraform init -backend=false -input=false
-      - run: terraform validate

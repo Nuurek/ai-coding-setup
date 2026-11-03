@@ -1,0 +1,15 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: biome
+      glob: "*.{ts,json}"
+      run: npx biome check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+    - name: shellcheck
+      file_types: [text/x-shellscript]
+      exclude: ["*.mustache", "*.tftpl"]
+      run: shellcheck --severity=warning {staged_files}
+    - name: terraform
+      glob: "coder/*.tf"
+      run: terraform -chdir=coder fmt && terraform -chdir=coder init -backend=false -input=false >/dev/null && terraform -chdir=coder validate
+      stage_fixed: true
