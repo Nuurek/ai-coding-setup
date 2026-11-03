@@ -7,15 +7,16 @@ import { afterEach, describe, it, mock } from "node:test";
 let existsFn: (p: string) => boolean = realFs.existsSync;
 let platformFn: () => NodeJS.Platform = realOs.platform;
 
-// `constants` excluded — it's non-configurable in Node v26+ and can't be redefined via mock.
+// `constants` excluded: non-configurable in newer Node, so mock.module can't redefine it.
 const { constants: _fsConstants, ...fsWithoutConstants } = realFs as typeof realFs & {
   constants: unknown;
 };
+const { constants: _osConstants, ...osWithoutConstants } = realOs;
 mock.module("node:fs", {
   namedExports: { ...fsWithoutConstants, existsSync: (p: string) => existsFn(p) },
 });
 mock.module("node:os", {
-  namedExports: { ...realOs, platform: () => platformFn() },
+  namedExports: { ...osWithoutConstants, platform: () => platformFn() },
 });
 
 const { hasSystemd, getScheduler } = await import("./scheduler.js");

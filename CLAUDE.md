@@ -59,7 +59,9 @@ features/
     ai-coding-setup-init  # lifecycle, as remote user: `create` = qmd config + full setup, `start` = relaunch watcher
 coder/                  # Coder template (outer workspace container + sibling Dev Container, GPU)
   scripts/              # agent scripts loaded by main.tf (file()/templatefile()), not inlined
-.github/workflows/release-features.yml  # publishes features/src/* to GHCR on push to main
+.github/workflows/
+  test.yml              # lint + tests on PRs
+  release-features.yml  # publishes features/src/* to GHCR on push to main
 ```
 
 The Feature ships its own copy of the CLI (staged by `features/bundle.sh`) rather than cloning this
