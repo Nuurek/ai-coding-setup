@@ -9,6 +9,7 @@
 # separate persistent volume for tool state across idle autostop/restart.
 
 terraform {
+  required_version = "~> 1.17"
   required_providers {
     coder  = { source = "coder/coder", version = "2.18.0" }
     docker = { source = "kreuzwerker/docker", version = "4.5.0" }

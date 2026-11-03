@@ -17,6 +17,7 @@ jobs:
           cache: npm
       - uses: hashicorp/setup-terraform@v3
         with:
+          terraform_version: "~1.17"
           terraform_wrapper: false
       - run: npm ci
       - run: npx lefthook run pre-commit --all-files
