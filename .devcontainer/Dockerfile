@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/base:ubuntu24.04
+FROM mcr.microsoft.com/devcontainers/base:ubuntu26.04
 
 COPY --from=oven/bun:1.3 /usr/local/bin/bun /usr/local/bin/
 
