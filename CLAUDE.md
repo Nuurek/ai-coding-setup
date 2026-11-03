@@ -59,6 +59,7 @@ features/
     ai-coding-setup-init  # lifecycle, as remote user: `create` = qmd config + full setup, `start` = relaunch watcher
 coder/                  # Coder template (outer workspace container + sibling Dev Container, GPU)
   scripts/              # agent scripts loaded by main.tf (file()/templatefile()), not inlined
+.devcontainer/          # dev environment for this repo (Coder workspace): node 22, bun, terraform, shellcheck, gh, Claude Code
 .github/workflows/
   test.yml              # lefthook checks on all files + tests, on PRs
   release-features.yml  # publishes features/src/* to GHCR on push to main
