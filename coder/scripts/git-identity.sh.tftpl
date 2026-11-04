@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Dev Container agent script: set the git identity from the Coder account in the global
+# git config, so tools that read it (not only git commit) find it.
+# Rendered by templatefile() in main.tf.
+set -euo pipefail
+git config --global user.name '${name}'
+git config --global user.email '${email}'
