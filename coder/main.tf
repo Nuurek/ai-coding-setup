@@ -100,11 +100,15 @@ resource "coder_devcontainer" "project" {
 }
 
 # The Dev Container runs its own sub-agent, which doesn't inherit coder_agent.main's env.
-resource "coder_env" "devcontainer_git" {
-  for_each = length(coder_devcontainer.project) > 0 ? local.git_env : {}
-  agent_id = coder_devcontainer.project[0].subagent_id
-  name     = each.key
-  value    = each.value
+resource "coder_script" "devcontainer_git" {
+  count        = length(coder_devcontainer.project)
+  agent_id     = coder_devcontainer.project[0].subagent_id
+  display_name = "git identity"
+  script = templatefile("${path.module}/scripts/git-identity.sh.tftpl", {
+    name  = local.git_name
+    email = local.git_email
+  })
+  run_on_start = true
 }
 
 resource "coder_script" "devcontainer_gh" {
