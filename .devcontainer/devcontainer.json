@@ -16,9 +16,10 @@
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/nuurek/ai-coding-setup/tooling:1": {}
   },
+  "initializeCommand": "mkdir -p /shared/ai-coding-setup/claude /shared/qmd-models",
   "mounts": [
-    "source=ai-coding-setup-claude,target=/home/vscode/.claude,type=volume",
-    "source=qmd-models,target=/home/vscode/.cache/qmd/models,type=volume"
+    "source=/shared/ai-coding-setup/claude,target=/home/vscode/.claude,type=bind",
+    "source=/shared/qmd-models,target=/home/vscode/.cache/qmd/models,type=bind"
   ],
   "postCreateCommand": "npm ci",
   "waitFor": "postCreateCommand"
