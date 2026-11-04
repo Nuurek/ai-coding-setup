@@ -57,7 +57,7 @@ features/
     devcontainer-feature.json  # options (qmdConfig, rtkVersion) + lifecycle hooks
     install.sh          # image build, as root: inotify-tools, bundled CLI, qmd, rtk
     ai-coding-setup-init  # lifecycle, as remote user: `create` = qmd config + full setup, `start` = relaunch watcher
-coder/                  # Coder template (outer workspace container + sibling Dev Container, GPU)
+coder/                  # Coder template (outer workspace container running the Dev Container via Docker-in-Docker, GPU)
   scripts/              # agent scripts loaded by main.tf (file()/templatefile()), not inlined
 .devcontainer/          # dev environment for this repo (Coder workspace): node 22, bun, terraform, shellcheck, gh, Claude Code
 .github/workflows/

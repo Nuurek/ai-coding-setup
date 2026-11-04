@@ -5,7 +5,6 @@ set -euxo pipefail
 
 REPO_URL='${repo_url}'
 REPO_FOLDER='${repo_folder}'
-WORKSPACE_ROOT='${workspace_root}'
 IGNORED_URLS=(%{ for url in ignored_urls ~}'${url}' %{ endfor ~})
 
 if [ -z "$REPO_URL" ]; then
@@ -18,9 +17,6 @@ for url in "$${IGNORED_URLS[@]}"; do
   echo "repo_urls: ignoring $url (only the first repo is used for now)"
 done
 
-# Docker creates the bind-mount dir as root; take ownership before cloning.
-sudo mkdir -p "$REPO_FOLDER"
-sudo chown -R coder:coder "$WORKSPACE_ROOT"
 if [ ! -d "$REPO_FOLDER/.git" ]; then
   git clone "$REPO_URL" "$REPO_FOLDER"
 else

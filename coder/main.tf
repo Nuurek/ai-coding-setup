@@ -1,12 +1,12 @@
 # Coder template: Docker workspace that builds any repo's Dev Container, with GPU.
 #
-# The workspace is a thin outer container (Coder agent + Docker CLI +
-# @devcontainers/cli) that mounts the host Docker socket, so the target repo's
-# ./.devcontainer is built as a *sibling* container on the host (not DinD) — which
-# is what lets `--gpus all` reach the GPU. Sibling bind-mount sources are resolved
-# by the host daemon, so the repo lives on a host bind mount at a path identical on
-# the host and in the outer container (workspace_root below). /home/coder is a
-# separate persistent volume for tool state across idle autostop/restart.
+# The workspace is a thin, privileged outer container (Coder agent, its own Docker
+# daemon, @devcontainers/cli) that builds the target repo's ./.devcontainer inside it
+# (Docker-in-Docker), so each workspace only sees and owns its own Dev Containers.
+# The GPU is passed to the outer container and on to the Dev Container through the
+# NVIDIA runtime. /home/coder (repo, tool state) and /var/lib/docker (images, Dev
+# Containers, their volumes) are per-workspace volumes, removed with the workspace;
+# /shared is one volume for all workspaces.
 
 terraform {
   required_version = "~> 1.17"
@@ -43,14 +43,11 @@ data "coder_parameter" "repo_urls" {
 locals {
   # Multi-repo is future-proofing: only the first URL is cloned and built today.
   # try(): template import plans with value "" (no default).
-  repo_urls = try(jsondecode(data.coder_parameter.repo_urls.value), [])
-  repo_url  = try(local.repo_urls[0], "")
-  repo_name = trimsuffix(basename(local.repo_url), ".git")
-  home      = "/home/coder"
-  # Repo tree on a host bind mount at a path identical on host and in the outer
-  # container, so the sibling Dev Container's bind-mount source resolves.
-  workspace_root = "/var/lib/coder/workspaces/${data.coder_workspace.me.id}"
-  repo_folder    = "${local.workspace_root}/${local.repo_name}"
+  repo_urls   = try(jsondecode(data.coder_parameter.repo_urls.value), [])
+  repo_url    = try(local.repo_urls[0], "")
+  repo_name   = trimsuffix(basename(local.repo_url), ".git")
+  home        = "/home/coder"
+  repo_folder = "${local.home}/${local.repo_name}"
 
   git_name  = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
   git_email = data.coder_workspace_owner.me.email
@@ -67,10 +64,9 @@ resource "coder_agent" "main" {
   os   = "linux"
   env  = local.git_env
   startup_script = templatefile("${path.module}/scripts/startup.sh.tftpl", {
-    repo_url       = local.repo_url
-    repo_folder    = local.repo_folder
-    workspace_root = local.workspace_root
-    ignored_urls   = slice(local.repo_urls, min(1, length(local.repo_urls)), length(local.repo_urls))
+    repo_url     = local.repo_url
+    repo_folder  = local.repo_folder
+    ignored_urls = slice(local.repo_urls, min(1, length(local.repo_urls)), length(local.repo_urls))
   })
 
   metadata {
@@ -126,7 +122,16 @@ resource "docker_volume" "home" {
   }
 }
 
-# Outer image: Coder agent runtime + Docker CLI + Node + @devcontainers/cli.
+# The inner daemon's storage. Must be a volume: overlayfs can't run on the container's
+# own overlay root.
+resource "docker_volume" "docker" {
+  name = "coder-${data.coder_workspace.me.id}-docker"
+  lifecycle {
+    ignore_changes = all
+  }
+}
+
+# Outer image: Docker, NVIDIA Container Toolkit, Node, @devcontainers/cli.
 # Shared across workspaces (same tag), so deleting one workspace must not remove it.
 resource "docker_image" "outer" {
   name         = "coder-devcontainer-outer:latest"
@@ -137,6 +142,7 @@ resource "docker_image" "outer" {
   }
   triggers = {
     dockerfile = filesha1("${path.module}/outer.Dockerfile")
+    entrypoint = filesha1("${path.module}/scripts/entrypoint.sh")
   }
 }
 
@@ -147,32 +153,33 @@ resource "docker_container" "workspace" {
 
   # Requires the NVIDIA Container Toolkit on the host.
   gpus = "all"
+  # Needed by the inner Docker daemon.
+  privileged = true
 
-  entrypoint = ["sh", "-c", replace(coder_agent.main.init_script, "/localhost|127\\.0\\.0\\.1/", "host.docker.internal")]
-  env        = ["CODER_AGENT_TOKEN=${coder_agent.main.token}"]
+  command = [replace(coder_agent.main.init_script, "/localhost|127\\.0\\.0\\.1/", "host.docker.internal")]
+  env     = ["CODER_AGENT_TOKEN=${coder_agent.main.token}"]
   host {
     host = "host.docker.internal"
     ip   = "host-gateway"
   }
 
-  group_add = [tostring(var.docker_gid)]
-
-  # Host Docker socket -> Dev Containers run as host siblings (so GPU passes through).
-  volumes {
-    host_path      = "/var/run/docker.sock"
-    container_path = "/var/run/docker.sock"
-  }
-  # Repo tree on a host bind mount at an identical path on both sides, so the
-  # sibling Dev Container's bind-mount source exists for the host daemon.
-  volumes {
-    host_path      = local.workspace_root
-    container_path = local.workspace_root
-    read_only      = false
-  }
   # Persistent home across autostop/restart.
   volumes {
     volume_name    = docker_volume.home.name
     container_path = local.home
+    read_only      = false
+  }
+  volumes {
+    volume_name    = docker_volume.docker.name
+    container_path = "/var/lib/docker"
+    read_only      = false
+  }
+  # Shared by all workspaces and kept when one is deleted (not managed by Terraform).
+  # Dev Containers bind-mount folders under /shared for state that should outlive a
+  # workspace, like ~/.claude.
+  volumes {
+    volume_name    = "coder-shared"
+    container_path = "/shared"
     read_only      = false
   }
 }
