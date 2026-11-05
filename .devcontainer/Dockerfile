@@ -7,6 +7,7 @@ USER root
 RUN mkdir -p \
         /home/vscode/.claude \
         /home/vscode/.cache/qmd/models \
+        /home/vscode/.config/gh \
     && chown -R vscode:vscode /home/vscode
 
 USER vscode

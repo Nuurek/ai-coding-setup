@@ -59,7 +59,7 @@ features/
     ai-coding-setup-init  # lifecycle, as remote user: `create` = qmd config + full setup, `start` = relaunch watcher
 coder/                  # Coder template (outer workspace container running the Dev Container via Docker-in-Docker, GPU)
   scripts/              # agent scripts loaded by main.tf (file()/templatefile()), not inlined
-.devcontainer/          # dev environment for this repo (Coder workspace): node 22, bun, Docker (outer daemon), gh, Claude Code
+.devcontainer/          # dev environment for this repo (Coder workspace): node 22, bun, Docker (outer daemon), gh, Claude Code; `~/.claude` and the gh login persist in `/shared`
 .githooks/pre-commit    # git hook (`git config core.hooksPath .githooks`), runs .lefthook/run.sh
 .lefthook/              # lint image (biome, shellcheck, terraform, lefthook) + run.sh, used by git hooks and CI
 .github/workflows/

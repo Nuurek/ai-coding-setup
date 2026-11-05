@@ -17,10 +17,11 @@
       "extensions": ["anthropic.claude-code"]
     }
   },
-  "initializeCommand": "mkdir -p /shared/ai-coding-setup/claude /shared/qmd-models",
+  "initializeCommand": "mkdir -p /shared/ai-coding-setup/claude /shared/qmd-models /shared/gh",
   "mounts": [
     "source=/shared/ai-coding-setup/claude,target=/home/vscode/.claude,type=bind",
-    "source=/shared/qmd-models,target=/home/vscode/.cache/qmd/models,type=bind"
+    "source=/shared/qmd-models,target=/home/vscode/.cache/qmd/models,type=bind",
+    "source=/shared/gh,target=/home/vscode/.config/gh,type=bind"
   ],
   "containerEnv": {
     "CLAUDE_CONFIG_DIR": "/home/vscode/.claude",
