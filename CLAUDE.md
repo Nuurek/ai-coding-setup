@@ -69,7 +69,8 @@ coder/                  # Coder template (outer workspace container running the 
 
 The Feature ships its own copy of the CLI (staged by `features/bundle.sh`) rather than cloning this
 repo, so its `version` in `devcontainer-feature.json` pins the code — bump it to publish CLI changes
-to devcontainers. Its rtk version default mirrors `RTK_VERSION` in `setup` — bump both together.
+to devcontainers. This repo's `.devcontainer/devcontainer-lock.json` pins the Feature digest, so after a
+release run `npx @devcontainers/cli upgrade --workspace-folder .` to pick it up. Its rtk version default mirrors `RTK_VERSION` in `setup` — bump both together.
 To test locally: run `features/bundle.sh`, then reference `features/src/tooling` as a local Feature
 (copy it into a test project's `.devcontainer/`).
 

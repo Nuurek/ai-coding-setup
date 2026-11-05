@@ -16,9 +16,9 @@
       "integrity": "sha256:2a19d3b0b3879437637cfd292eb29fee0afcfbe6364e33db9afc4f80c5c1f956"
     },
     "ghcr.io/nuurek/ai-coding-setup/tooling:1": {
-      "version": "1.0.0",
-      "resolved": "ghcr.io/nuurek/ai-coding-setup/tooling@sha256:33153f60cc29bcc30f796797dcd9516f9b5616ab05079fd3772e917341d3daff",
-      "integrity": "sha256:33153f60cc29bcc30f796797dcd9516f9b5616ab05079fd3772e917341d3daff"
+      "version": "1.1.0",
+      "resolved": "ghcr.io/nuurek/ai-coding-setup/tooling@sha256:617da334760d0f62519d9e935870f5ae5ceb80a3ab081100b2ee159c6f95adde",
+      "integrity": "sha256:617da334760d0f62519d9e935870f5ae5ceb80a3ab081100b2ee159c6f95adde"
     }
   }
 }
