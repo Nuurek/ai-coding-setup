@@ -5,8 +5,13 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 biome=$(sed -n '/"node_modules\/@biomejs\/biome": {/,/"version"/ s/.*"version": "\(.*\)".*/\1/p' package-lock.json)
 docker build -q -t ai-coding-setup-lint --build-arg BIOME_VERSION="$biome" .lefthook >/dev/null
+env=()
+# `git commit -- <paths>` runs the hook against a temporary index.
+if [ -n "${GIT_INDEX_FILE:-}" ]; then
+  env+=(-e GIT_INDEX_FILE)
+fi
 # From a Dev Container the daemon runs outside it and sees the repo at LOCAL_WORKSPACE_FOLDER.
-exec docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp \
+exec docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp "${env[@]}" \
   -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0='*' \
   -v "${LOCAL_WORKSPACE_FOLDER:-$PWD}:$PWD" -w "$PWD" \
   ai-coding-setup-lint lefthook run "$@"
