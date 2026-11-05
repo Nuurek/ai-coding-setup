@@ -3,7 +3,13 @@ import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { afterEach, describe, it } from "node:test";
 import type { MergeResult } from "./setup.js";
-import { mergeHook, mergeMcpConfig, mergeStatusLine, resolveConfigPath } from "./setup.js";
+import {
+  mergeHook,
+  mergeMcpConfig,
+  mergeStatusLine,
+  resolveClaudePaths,
+  resolveConfigPath,
+} from "./setup.js";
 
 describe("mergeMcpConfig", () => {
   const fragment = { qmd: { command: "qmd", args: ["mcp"] } };
@@ -163,5 +169,33 @@ describe("mergeHook", () => {
       (result.config.hooks as Record<string, unknown>).PostToolUse,
       existing.hooks.PostToolUse,
     );
+  });
+});
+
+describe("resolveClaudePaths", () => {
+  const origDir = process.env.CLAUDE_CONFIG_DIR;
+
+  afterEach(() => {
+    if (origDir === undefined) {
+      delete process.env.CLAUDE_CONFIG_DIR;
+    } else {
+      process.env.CLAUDE_CONFIG_DIR = origDir;
+    }
+  });
+
+  it("defaults to ~/.claude and ~/.claude.json", () => {
+    delete process.env.CLAUDE_CONFIG_DIR;
+    assert.deepEqual(resolveClaudePaths(), {
+      dir: `${homedir()}/.claude`,
+      json: `${homedir()}/.claude.json`,
+    });
+  });
+
+  it("keeps .claude.json inside CLAUDE_CONFIG_DIR", () => {
+    process.env.CLAUDE_CONFIG_DIR = "/tmp/claude-test";
+    assert.deepEqual(resolveClaudePaths(), {
+      dir: "/tmp/claude-test",
+      json: "/tmp/claude-test/.claude.json",
+    });
   });
 });

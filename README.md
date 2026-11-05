@@ -6,7 +6,7 @@ CLI tool that manages [qmd](https://github.com/tobilu/qmd) collections, auto-ind
 
 - **Syncs collections** — reads a YAML config and registers repos with qmd
 - **Auto-indexes** — installs a file-watcher that re-indexes and re-embeds when `.git/logs/HEAD` changes in any watched repo (launchd on macOS, systemd on Linux)
-- **Claude Code integration** — symlinks rules and skills into `~/.claude/` and merges the qmd MCP server into `~/.claude.json`
+- **Claude Code integration** — symlinks rules and skills into `~/.claude/` and merges the qmd MCP server into `~/.claude.json` (both follow `CLAUDE_CONFIG_DIR` when set)
 
 ## Prerequisites
 

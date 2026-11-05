@@ -34,6 +34,13 @@ export function resolveConfigPath(override?: string): string {
   return `${configHome}/qmd/config.yaml`;
 }
 
+// With CLAUDE_CONFIG_DIR set, Claude Code keeps .claude.json inside that dir, not in $HOME.
+export function resolveClaudePaths(): { dir: string; json: string } {
+  const dir = process.env.CLAUDE_CONFIG_DIR;
+  if (dir) return { dir, json: `${dir}/.claude.json` };
+  return { dir: `${HOME}/.claude`, json: `${HOME}/.claude.json` };
+}
+
 export interface MergeResult {
   action: "created" | "exists" | "added";
   config: Record<string, unknown>;
@@ -127,6 +134,7 @@ function symlinkSafe(src: string, dst: string): void {
 // --- Main ---
 
 function main(configOverride?: string): void {
+  const claude = resolveClaudePaths();
   console.log("=== ai-coding-setup ===");
   console.log(`Repo: ${REPO_DIR}`);
   console.log("");
@@ -139,15 +147,15 @@ function main(configOverride?: string): void {
 
   // ── Step 2: Symlink skills and rules ───────────────────────────────
   console.log("--- Installing Claude Code skills and rules ---");
-  symlinkSafe(`${REPO_DIR}/skills/qmd-add`, `${HOME}/.claude/skills/qmd-add`);
-  symlinkSafe(`${REPO_DIR}/skills/qmd-update`, `${HOME}/.claude/skills/qmd-update`);
-  symlinkSafe(`${REPO_DIR}/rules/qmd.md`, `${HOME}/.claude/rules/qmd.md`);
-  symlinkSafe(`${REPO_DIR}/rules/rtk.md`, `${HOME}/.claude/rules/rtk.md`);
+  symlinkSafe(`${REPO_DIR}/skills/qmd-add`, `${claude.dir}/skills/qmd-add`);
+  symlinkSafe(`${REPO_DIR}/skills/qmd-update`, `${claude.dir}/skills/qmd-update`);
+  symlinkSafe(`${REPO_DIR}/rules/qmd.md`, `${claude.dir}/rules/qmd.md`);
+  symlinkSafe(`${REPO_DIR}/rules/rtk.md`, `${claude.dir}/rules/rtk.md`);
   console.log("");
 
   // ── Step 3: Inject MCP config ──────────────────────────────────────
   console.log("--- Configuring MCP server ---");
-  const claudeJsonPath = `${HOME}/.claude.json`;
+  const claudeJsonPath = claude.json;
   const mcpFragment = JSON.parse(readFileSync(`${REPO_DIR}/fragments/mcp-server.json`, "utf-8"));
 
   const existing = existsSync(claudeJsonPath)
@@ -169,7 +177,7 @@ function main(configOverride?: string): void {
 
   // ── Step 3b: Inject status line into Claude Code settings ─────────
   console.log("--- Configuring status line ---");
-  const settingsPath = `${HOME}/.claude/settings.json`;
+  const settingsPath = `${claude.dir}/settings.json`;
   const statusFragment = JSON.parse(
     readFileSync(`${REPO_DIR}/fragments/status-line.json`, "utf-8"),
   );
@@ -178,7 +186,7 @@ function main(configOverride?: string): void {
     : null;
   const { action: slAction, config: slConfig } = mergeStatusLine(existingSettings, statusFragment);
   if (slAction !== "exists") {
-    mkdirSync(`${HOME}/.claude`, { recursive: true });
+    mkdirSync(claude.dir, { recursive: true });
     writeFileSync(settingsPath, `${JSON.stringify(slConfig, null, 2)}\n`);
   }
   const slLabels = {
@@ -197,7 +205,7 @@ function main(configOverride?: string): void {
     : null;
   const { action: hookAction, config: hookConfig } = mergeHook(existingSettings2, hookFragment);
   if (hookAction !== "exists") {
-    mkdirSync(`${HOME}/.claude`, { recursive: true });
+    mkdirSync(claude.dir, { recursive: true });
     writeFileSync(settingsPath, `${JSON.stringify(hookConfig, null, 2)}\n`);
   }
   const hookLabels = {

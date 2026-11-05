@@ -23,6 +23,7 @@
     "source=/shared/qmd-models,target=/home/vscode/.cache/qmd/models,type=bind"
   ],
   "containerEnv": {
+    "CLAUDE_CONFIG_DIR": "/home/vscode/.claude",
     "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
   },
   "postCreateCommand": "npm ci && git config core.hooksPath .githooks",
