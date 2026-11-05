@@ -16,6 +16,11 @@
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/nuurek/ai-coding-setup/tooling:1": {}
   },
+  "customizations": {
+    "vscode": {
+      "extensions": ["anthropic.claude-code"]
+    }
+  },
   "initializeCommand": "mkdir -p /shared/ai-coding-setup/claude /shared/qmd-models",
   "mounts": [
     "source=/shared/ai-coding-setup/claude,target=/home/vscode/.claude,type=bind",
