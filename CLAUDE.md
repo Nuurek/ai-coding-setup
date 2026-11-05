@@ -23,7 +23,7 @@ ai-coding-setup -c path/to/config.yaml sync  # use custom config
 ```
 src/
   setup.ts              # CLI entry point (commander), main setup flow, MCP config merge, status-line merge, rtk hook merge
-  setup.test.ts         # tests for mergeMcpConfig, mergeStatusLine, mergeHook, resolveConfigPath
+  setup.test.ts         # tests for mergeMcpConfig, mergeStatusLine, mergeHook, resolveConfigPath, resolveClaudePaths
   sync-collections.ts   # collection sync logic, types (Config, Collection), helpers
   sync-collections.test.ts  # tests for expandHome, buildGlob, parseCollectionNames
   scheduler.ts          # capability dispatch (darwin->launchd; linux->systemd or inotify via hasSystemd())
@@ -107,6 +107,7 @@ Tests swap `existsFn` to control filesystem behavior, restored in `afterEach`.
 ## Key patterns
 
 - **`REPO_DIR`**: `resolve(dirname(fileURLToPath(import.meta.url)), "..")` — used to locate templates, fragments, and bin scripts at runtime
+- **`resolveClaudePaths`**: Claude Code's dir (`~/.claude`) and `.claude.json` (`~/.claude.json`); with `CLAUDE_CONFIG_DIR` set, both live in that dir. The Dev Container sets it to the shared `~/.claude` mount so `.claude.json` (onboarding, trust, MCP) survives rebuilds
 - **`expandHome`**: replaces leading `~` with `homedir()` — used for all config paths
 - **Config closure in CLI**: `const configPath = () => resolveConfigPath(program.opts().config)` — deferred because `program.opts()` is only populated after `program.parse()`
 - **Pinned Node** (`~/.local/state/ai-coding-setup/node-bin-dir`): `setup` records the bin dir of the node it resolved; `bin/qmd-auto-embed.sh` prepends it to `PATH` at top priority. qmd's shebang is `#!/usr/bin/env node` and its `better-sqlite3` binding is ABI-locked to one Node major, so the interactive shell, the setup run, and the launchd/systemd watcher (minimal `PATH`) must all land on the same node — otherwise qmd dies with `NODE_MODULE_VERSION` mismatch. Re-run `./setup` after a Node upgrade to rebuild and re-pin.
