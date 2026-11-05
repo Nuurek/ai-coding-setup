@@ -4,14 +4,10 @@ COPY --from=oven/bun:1.3 /usr/local/bin/bun /usr/local/bin/
 
 USER root
 
-RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-        shellcheck \
-    && mkdir -p \
+RUN mkdir -p \
         /home/vscode/.claude \
         /home/vscode/.cache/qmd/models \
-    && chown -R vscode:vscode /home/vscode \
-    && rm -rf /var/lib/apt/lists/*
+    && chown -R vscode:vscode /home/vscode
 
 USER vscode
 

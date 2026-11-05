@@ -11,16 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "~1.17"
-          terraform_wrapper: false
-      - run: npm ci
-      - run: npx lefthook run pre-commit --all-files
+      - run: .lefthook/run.sh pre-commit --all-files
       - run: git diff --exit-code
 
   test:

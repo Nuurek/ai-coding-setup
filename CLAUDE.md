@@ -59,7 +59,9 @@ features/
     ai-coding-setup-init  # lifecycle, as remote user: `create` = qmd config + full setup, `start` = relaunch watcher
 coder/                  # Coder template (outer workspace container running the Dev Container via Docker-in-Docker, GPU)
   scripts/              # agent scripts loaded by main.tf (file()/templatefile()), not inlined
-.devcontainer/          # dev environment for this repo (Coder workspace): node 22, bun, terraform, shellcheck, gh, Claude Code
+.devcontainer/          # dev environment for this repo (Coder workspace): node 22, bun, Docker (outer daemon), gh, Claude Code
+.githooks/pre-commit    # git hook (`git config core.hooksPath .githooks`), runs .lefthook/run.sh
+.lefthook/              # lint image (biome, shellcheck, terraform, lefthook) + run.sh, used by git hooks and CI
 .github/workflows/
   test.yml              # lefthook checks on all files + tests, on PRs
   release-features.yml  # publishes features/src/* to GHCR on push to main
@@ -84,7 +86,7 @@ Types are defined in `sync-collections.ts`: `Config`, `Collection`, `LaunchdConf
 - **TypeScript** (ES2022, NodeNext modules) — compiled to `dist/`
 - **Node.js >= 22** — required for `node:test` module mocking
 - **Biome** — linting and formatting (double quotes, semicolons, 2-space indent, 100 line width)
-- **lefthook** — pre-commit hook (`lefthook.yml`): biome, shellcheck, terraform fmt/validate. CI runs the same hook with `--all-files`. Needs `shellcheck` and `terraform` on PATH
+- **lefthook** — pre-commit hook (`lefthook.yml`): biome, shellcheck, terraform fmt/validate. `.lefthook/run.sh` runs it in the lint image, so only Docker is needed; CI runs the same with `--all-files`
 - **Commander.js** — CLI argument parsing
 - **Mustache** — template rendering (plist/systemd unit generation). Uses triple-mustache `{{{var}}}` for filesystem paths (no HTML escaping)
 - **yaml** — config file parsing
