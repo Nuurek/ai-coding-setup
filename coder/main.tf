@@ -69,6 +69,12 @@ resource "coder_agent" "main" {
     ignored_urls = slice(local.repo_urls, min(1, length(local.repo_urls)), length(local.repo_urls))
   })
 
+  # VS Code belongs on the Dev Container's agent; the outer container has no dev tooling.
+  display_apps {
+    vscode          = false
+    vscode_insiders = false
+  }
+
   metadata {
     display_name = "GPU"
     key          = "gpu"
