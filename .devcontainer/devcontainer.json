@@ -8,11 +8,7 @@
       "version": "22",
       "installYarnUsingApt": false
     },
-    "ghcr.io/devcontainers/features/terraform:1": {
-      "version": "1.17.1",
-      "tflint": "none",
-      "terragrunt": "none"
-    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/nuurek/ai-coding-setup/tooling:1": {}
   },
@@ -26,6 +22,9 @@
     "source=/shared/ai-coding-setup/claude,target=/home/vscode/.claude,type=bind",
     "source=/shared/qmd-models,target=/home/vscode/.cache/qmd/models,type=bind"
   ],
-  "postCreateCommand": "npm ci",
+  "containerEnv": {
+    "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
+  },
+  "postCreateCommand": "npm ci && git config core.hooksPath .githooks",
   "waitFor": "postCreateCommand"
 }

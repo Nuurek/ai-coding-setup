@@ -1,9 +1,12 @@
+# Runs in the lint image via .lefthook/run.sh; .githooks/pre-commit calls it.
+no_auto_install: true
+
 pre-commit:
   parallel: true
   jobs:
     - name: biome
       glob: "*.{ts,json}"
-      run: npx biome check --write --no-errors-on-unmatched {staged_files}
+      run: biome check --write --no-errors-on-unmatched {staged_files}
       stage_fixed: true
     - name: shellcheck
       file_types: [text/x-shellscript]

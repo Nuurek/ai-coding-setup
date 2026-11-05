@@ -10,12 +10,6 @@
       "resolved": "ghcr.io/devcontainers/features/node@sha256:2a19d3b0b3879437637cfd292eb29fee0afcfbe6364e33db9afc4f80c5c1f956",
       "integrity": "sha256:2a19d3b0b3879437637cfd292eb29fee0afcfbe6364e33db9afc4f80c5c1f956"
     },
-    "ghcr.io/devcontainers/features/terraform:1": {
-      "version": "1.5.0",
-      "resolved": "ghcr.io/devcontainers/features/terraform@sha256:bc9eaf21aaba050bace59f411c282cb58058535a48232c059e60c19f86caa8f5",
-      "integrity": "sha256:bc9eaf21aaba050bace59f411c282cb58058535a48232c059e60c19f86caa8f5",
-      "dependsOn": ["ghcr.io/devcontainers/features/github-cli:1"]
-    },
     "ghcr.io/nuurek/ai-coding-setup/tooling:1": {
       "version": "1.0.0",
       "resolved": "ghcr.io/nuurek/ai-coding-setup/tooling@sha256:33153f60cc29bcc30f796797dcd9516f9b5616ab05079fd3772e917341d3daff",
