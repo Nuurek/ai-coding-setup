@@ -24,6 +24,7 @@
     "source=/shared/gh,target=/home/vscode/.config/gh,type=bind"
   ],
   "containerEnv": {
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
     "CLAUDE_CONFIG_DIR": "/home/vscode/.claude",
     "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
   },
