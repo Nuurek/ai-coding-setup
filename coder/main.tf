@@ -125,6 +125,18 @@ resource "coder_script" "devcontainer_gh" {
   run_on_start = true
 }
 
+# VS Code in the browser, for devices without desktop VS Code (e.g. a Chromebook).
+# A subdomain app, so it needs the server's wildcard access URL.
+module "vscode_web" {
+  count          = length(coder_devcontainer.project)
+  source         = "registry.coder.com/coder/vscode-web/coder"
+  version        = "1.6.2"
+  agent_id       = coder_devcontainer.project[0].subagent_id
+  accept_license = true
+  folder         = "/workspaces/${local.repo_name}"
+  extensions     = ["anthropic.claude-code"]
+}
+
 resource "docker_volume" "home" {
   name = "coder-${data.coder_workspace.me.id}-home"
   lifecycle {
